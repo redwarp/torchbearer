@@ -229,7 +229,7 @@ fn cast_ray<T: Map>(
             visibles[(x + y * width) as usize] = true;
         }
 
-        if !map.is_transparent(x + offset.0, y + offset.1) {
+        if !map.is_transparent((x + offset.0, y + offset.1)) {
             return;
         }
     }
@@ -247,7 +247,7 @@ fn post_process_vision<T: Map>(
     for x in min.0..=max.0 {
         for y in min.1..=max.1 {
             let index = (x + y * width) as usize;
-            let is_see_through = map.is_transparent(x + offset.0, y + offset.1);
+            let is_see_through = map.is_transparent((x + offset.0, y + offset.1));
             if !is_see_through && !visibles[index] {
                 // We check for walls that are not in vision only.
                 let neighboor_x = x + diff.0;
@@ -256,8 +256,8 @@ fn post_process_vision<T: Map>(
                 let index_0 = (neighboor_x + y * width) as usize;
                 let index_1 = (x + neighboor_y * width) as usize;
 
-                if (map.is_transparent(neighboor_x + offset.0, y + offset.1) && visibles[index_0])
-                    || (map.is_transparent(x + offset.0, neighboor_y + offset.1)
+                if (map.is_transparent((neighboor_x + offset.0, y + offset.1)) && visibles[index_0])
+                    || (map.is_transparent((x + offset.0, neighboor_y + offset.1))
                         && visibles[index_1])
                 {
                     visibles[index] = true;
@@ -271,6 +271,8 @@ fn post_process_vision<T: Map>(
 mod tests {
     use rand::{prelude::StdRng, Rng, SeedableRng};
     use std::fmt::Debug;
+
+    use crate::Point;
 
     use super::{field_of_view, Map};
     const WIDTH: i32 = 45;
@@ -298,12 +300,12 @@ mod tests {
             (self.width, self.height)
         }
 
-        fn is_transparent(&self, x: i32, y: i32) -> bool {
+        fn is_transparent(&self, (x, y): Point) -> bool {
             let index = (x + y * self.width) as usize;
             self.transparent[index]
         }
 
-        fn is_walkable(&self, _x: i32, _y: i32) -> bool {
+        fn is_walkable(&self, _: Point) -> bool {
             false
         }
     }

@@ -55,11 +55,11 @@ impl Map for TestMap {
         (self.width, self.height)
     }
 
-    fn is_transparent(&self, _x: i32, _y: i32) -> bool {
+    fn is_transparent(&self, _: Point) -> bool {
         todo!("Not necessary for the bench");
     }
 
-    fn is_walkable(&self, x: i32, y: i32) -> bool {
+    fn is_walkable(&self, (x, y): Point) -> bool {
         self.tiles[(x + y * self.width) as usize]
     }
 }

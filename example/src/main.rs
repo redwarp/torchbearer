@@ -85,8 +85,10 @@ impl ExampleMap {
         let mut paint = Paint::default();
         paint.set_color_rgba8(0xe6, 0xcc, 0xe6, 0xff);
 
-        let mut pixmap_paint = PixmapPaint::default();
-        pixmap_paint.quality = FilterQuality::Bilinear;
+        let pixmap_paint = PixmapPaint {
+            quality: FilterQuality::Bilinear,
+            ..Default::default()
+        };
 
         let pixmap = &mut rendering.pixmap;
         pixmap.fill_rect(
@@ -106,7 +108,7 @@ impl ExampleMap {
 
         for x in 0..self.width {
             for y in 0..self.height {
-                if !self.is_walkable(x, y) {
+                if !self.is_walkable((x, y)) {
                     pixmap.fill_rect(
                         Rect::from_ltrb(
                             (x * SCALE) as f32,
@@ -124,7 +126,7 @@ impl ExampleMap {
         }
 
         let path = {
-            if rendering.lines.len() == 0 {
+            if rendering.lines.is_empty() {
                 None
             } else {
                 let pb = rendering.lines[1..].iter().fold(
@@ -147,9 +149,11 @@ impl ExampleMap {
 
         if let Some(path) = path {
             paint.set_color_rgba8(0xff, 0, 0, 0xff);
-            let mut stroke = Stroke::default();
-            stroke.width = 6.0;
-            stroke.line_cap = LineCap::Round;
+            let stroke = Stroke {
+                width: 6.0,
+                line_cap: LineCap::Round,
+                ..Default::default()
+            };
 
             pixmap.stroke_path(&path, &paint, &stroke, Transform::default(), None);
         }
@@ -187,11 +191,11 @@ impl Map for ExampleMap {
         (self.width, self.height)
     }
 
-    fn is_transparent(&self, _x: i32, _y: i32) -> bool {
+    fn is_transparent(&self, _: Point) -> bool {
         unreachable!("We don't care")
     }
 
-    fn is_walkable(&self, x: i32, y: i32) -> bool {
+    fn is_walkable(&self, (x, y): Point) -> bool {
         let index = (x + y * self.width) as usize;
         self.walkable[index]
     }
@@ -241,7 +245,7 @@ fn main() -> Result<(), Error> {
                 });
 
                 if let Some(mouse_cell) = mouse_cell {
-                    let is_walkable = map.is_walkable(mouse_cell.0, mouse_cell.1);
+                    let is_walkable = map.is_walkable(mouse_cell);
                     map.set_walkable(mouse_cell.0, mouse_cell.1, !is_walkable);
                     rendering.dirty = true;
                 }

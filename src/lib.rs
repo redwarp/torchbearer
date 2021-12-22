@@ -78,8 +78,8 @@ pub trait Map {
     fn dimensions(&self) -> (i32, i32);
     /// Wether it is possible or not to see through the tile at position `(x, y)`.
     /// Used by field of view algorithm.
-    fn is_transparent(&self, x: i32, y: i32) -> bool;
+    fn is_transparent(&self, position: Point) -> bool;
     /// Wether it is possible or not to walk through the tile at position `(x, y)`.
     /// Used by pathfinding algorithm.
-    fn is_walkable(&self, x: i32, y: i32) -> bool;
+    fn is_walkable(&self, position: Point) -> bool;
 }
