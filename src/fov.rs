@@ -103,8 +103,7 @@ pub fn field_of_view<T: Map>(map: &T, from: Point, radius: i32) -> Vec<(i32, i32
             sub_origin,
             (x - offset_x, miny - offset_y),
             radius_square,
-            offset_x,
-            offset_y,
+            (offset_x, offset_y),
         );
         cast_ray(
             map,
@@ -113,8 +112,7 @@ pub fn field_of_view<T: Map>(map: &T, from: Point, radius: i32) -> Vec<(i32, i32
             sub_origin,
             (x - offset_x, maxy - offset_y),
             radius_square,
-            offset_x,
-            offset_y,
+            (offset_x, offset_y),
         );
     }
     for y in miny + 1..maxy {
@@ -125,8 +123,7 @@ pub fn field_of_view<T: Map>(map: &T, from: Point, radius: i32) -> Vec<(i32, i32
             sub_origin,
             (minx - offset_x, y - offset_y),
             radius_square,
-            offset_x,
-            offset_y,
+            (offset_x, offset_y),
         );
         cast_ray(
             map,
@@ -135,8 +132,7 @@ pub fn field_of_view<T: Map>(map: &T, from: Point, radius: i32) -> Vec<(i32, i32
             sub_origin,
             (maxx - offset_x, y - offset_y),
             radius_square,
-            offset_x,
-            offset_y,
+            (offset_x, offset_y),
         );
     }
 
@@ -145,14 +141,10 @@ pub fn field_of_view<T: Map>(map: &T, from: Point, radius: i32) -> Vec<(i32, i32
         map,
         &mut visibles,
         sub_width,
-        x - offset_x + 1,
-        y - offset_y + 1,
-        maxx - offset_x,
-        maxy - offset_y,
-        -1,
-        -1,
-        offset_x,
-        offset_y,
+        (x - offset_x + 1, y - offset_y + 1),
+        (maxx - offset_x, maxy - offset_y),
+        (-1, -1),
+        (offset_x, offset_y),
     );
 
     // SW
@@ -160,14 +152,10 @@ pub fn field_of_view<T: Map>(map: &T, from: Point, radius: i32) -> Vec<(i32, i32
         map,
         &mut visibles,
         sub_width,
-        minx - offset_x,
-        y - offset_y + 1,
-        x - offset_x - 1,
-        maxy - offset_y,
-        1,
-        -1,
-        offset_x,
-        offset_y,
+        (minx - offset_x, y - offset_y + 1),
+        (x - offset_x - 1, maxy - offset_y),
+        (1, -1),
+        (offset_x, offset_y),
     );
 
     // NW
@@ -175,14 +163,10 @@ pub fn field_of_view<T: Map>(map: &T, from: Point, radius: i32) -> Vec<(i32, i32
         map,
         &mut visibles,
         sub_width,
-        minx - offset_x,
-        miny - offset_y,
-        x - offset_x - 1,
-        y - offset_y - 1,
-        1,
-        1,
-        offset_x,
-        offset_y,
+        (minx - offset_x, miny - offset_y),
+        (x - offset_x - 1, y - offset_y - 1),
+        (1, 1),
+        (offset_x, offset_y),
     );
 
     // NE
@@ -190,14 +174,10 @@ pub fn field_of_view<T: Map>(map: &T, from: Point, radius: i32) -> Vec<(i32, i32
         map,
         &mut visibles,
         sub_width,
-        x - offset_x + 1,
-        miny - offset_y,
-        maxx - offset_x,
-        y - offset_y - 1,
-        -1,
-        1,
-        offset_x,
-        offset_y,
+        (x - offset_x + 1, miny - offset_y),
+        (maxx - offset_x, y - offset_y - 1),
+        (-1, 1),
+        (offset_x, offset_y),
     );
 
     visibles
@@ -238,8 +218,7 @@ fn cast_ray<T: Map>(
     origin: Point,
     destination: Point,
     radius_square: i32,
-    offset_x: i32,
-    offset_y: i32,
+    offset: (i32, i32),
 ) {
     let (origin_x, origin_y) = origin;
     let bresenham = BresenhamLine::new(origin, destination).skip(1);
@@ -250,7 +229,7 @@ fn cast_ray<T: Map>(
             visibles[(x + y * width) as usize] = true;
         }
 
-        if !map.is_transparent(x + offset_x, y + offset_y) {
+        if !map.is_transparent(x + offset.0, y + offset.1) {
             return;
         }
     }
@@ -260,29 +239,25 @@ fn post_process_vision<T: Map>(
     map: &T,
     visibles: &mut Vec<bool>,
     width: i32,
-    minx: i32,
-    miny: i32,
-    maxx: i32,
-    maxy: i32,
-    dx: i32,
-    dy: i32,
-    offset_x: i32,
-    offset_y: i32,
+    min: (i32, i32),
+    max: (i32, i32),
+    diff: (i32, i32),
+    offset: (i32, i32),
 ) {
-    for x in minx..=maxx {
-        for y in miny..=maxy {
+    for x in min.0..=max.0 {
+        for y in min.1..=max.1 {
             let index = (x + y * width) as usize;
-            let is_see_through = map.is_transparent(x + offset_x, y + offset_y);
+            let is_see_through = map.is_transparent(x + offset.0, y + offset.1);
             if !is_see_through && !visibles[index] {
                 // We check for walls that are not in vision only.
-                let neighboor_x = x + dx;
-                let neighboor_y = y + dy;
+                let neighboor_x = x + diff.0;
+                let neighboor_y = y + diff.1;
 
                 let index_0 = (neighboor_x + y * width) as usize;
                 let index_1 = (x + neighboor_y * width) as usize;
 
-                if (map.is_transparent(neighboor_x + offset_x, y + offset_y) && visibles[index_0])
-                    || (map.is_transparent(x + offset_x, neighboor_y + offset_y)
+                if (map.is_transparent(neighboor_x + offset.0, y + offset.1) && visibles[index_0])
+                    || (map.is_transparent(x + offset.0, neighboor_y + offset.1)
                         && visibles[index_1])
                 {
                     visibles[index] = true;
