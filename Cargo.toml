@@ -1,8 +1,31 @@
 [package]
 name = "torchbearer"
-version = "0.1.0"
+version = "0.3.6"
+authors = ["Redwarp <redwarp@gmail.com>"]
 edition = "2021"
+description = "Find your path in darkerer dungeons."
+readme = "README.md"
+license = "Apache-2.0"
+repository = "https://github.com/redwarp/torchbearer/"
+keywords = ["gamedev", "pathfinding", "field-of-view"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+
+[dev-dependencies]
+bracket-pathfinding = "0.8"
+criterion = "0.3"
+rand = "0.8"
+tcod = "0.15"
+
+[[bench]]
+name = "fov"
+harness = false
+
+[[bench]]
+name = "path"
+harness = false
+
+[workspace]
+members = ["example"]
+resolver = "2"
