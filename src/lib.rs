@@ -39,11 +39,11 @@
 //!         (self.width, self.height)
 //!     }
 //!
-//!     fn is_transparent(&self, x: i32, y: i32) -> bool {
+//!     fn is_transparent(&self, (x, y): Point) -> bool {
 //!         self.transparent[(x + y * self.width) as usize]
 //!     }
 //!
-//!     fn is_walkable(&self, x: i32, y: i32) -> bool {
+//!     fn is_walkable(&self, (x, y): Point) -> bool {
 //!         self.walkable[(x + y * self.width) as usize]
 //!     }
 //! }

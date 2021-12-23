@@ -47,12 +47,12 @@ pub type NodeId = usize;
 ///         (self.width, self.height)
 ///     }
 ///
-///     fn is_transparent(&self, x: i32, y: i32) -> bool {
+///     fn is_transparent(&self, (x, y): Point) -> bool {
 ///         // pathfinding only considers walkability.
 ///         unreachable!("Not used in pathfinding.")
 ///     }
 ///
-///     fn is_walkable(&self, x: i32, y: i32) -> bool {
+///     fn is_walkable(&self, (x, y): Point) -> bool {
 ///         self.walkable[(x + y * self.width) as usize]
 ///     }
 /// }
@@ -116,12 +116,12 @@ pub fn astar_path_fourwaygrid<T: Map>(map: &T, from: Point, to: Point) -> Option
 ///         (self.width, self.height)
 ///     }
 ///
-///     fn is_transparent(&self, x: i32, y: i32) -> bool {
+///     fn is_transparent(&self, (x, y): Point) -> bool {
 ///         // pathfinding only considers walkability.
 ///         unreachable!("Not used in pathfinding.")
 ///     }
 ///
-///     fn is_walkable(&self, x: i32, y: i32) -> bool {
+///     fn is_walkable(&self, (x, y): Point) -> bool {
 ///         self.walkable[(x + y * self.width) as usize]
 ///     }
 /// }
