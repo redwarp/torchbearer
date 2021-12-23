@@ -6,7 +6,7 @@ use crate::Point;
 
 /// Iterator-based Bresenham's line drawing algorithm.
 ///
-/// Fork from https://github.com/mbr/bresenham-rs so that the iterator includes
+/// Fork from <https://github.com/mbr/bresenham-rs> so that the iterator includes
 /// `start` and `end`.
 ///
 /// [Bresenham's line drawing algorithm](https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm)

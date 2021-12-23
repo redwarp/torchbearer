@@ -265,7 +265,7 @@ pub trait Graph {
     fn cost_between(&self, a: NodeId, b: NodeId) -> f32;
 
     /// How close we are from our target.
-    /// See https://www.redblobgames.com/pathfinding/a-star/introduction.html#greedy-best-first
+    /// See <https://www.redblobgames.com/pathfinding/a-star/introduction.html#greedy-best-first>
     /// for more details about how it is useful.
     fn heuristic(&self, a: NodeId, b: NodeId) -> f32;
 

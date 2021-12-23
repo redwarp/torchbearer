@@ -14,7 +14,7 @@ Implement the `Map` trait, and call field of vision or pathfinding algorithm.
 ```rust
 use torchbearer::{Map, Point};
 use torchbearer::fov::field_of_view;
-use torchbearer::path::astar_path;
+use torchbearer::path::astar_path_fourwaygrid;
 
 struct SampleMap {
     width: i32,
@@ -26,6 +26,12 @@ struct SampleMap {
 impl SampleMap {
     fn new(width: i32, height: i32) -> Self {
          // (…)
+#        SampleMap {
+#            width,
+#            height,
+#            transparent: vec![true; (width * height) as usize],
+#            walkable: vec![true; (width * height) as usize],
+#        }
    }
 }
 
@@ -34,11 +40,11 @@ impl Map for SampleMap {
         (self.width, self.height)
     }
 
-    fn is_transparent(&self, x: i32, y: i32) -> bool {
+    fn is_transparent(&self, (x, y): Point) -> bool {
         self.transparent[(x + y * self.width) as usize]
     }
 
-    fn is_walkable(&self, x: i32, y: i32) -> bool {
+    fn is_walkable(&self, (x, y): Point) -> bool {
         self.walkable[(x + y * self.width) as usize]
     }
 }
@@ -55,7 +61,7 @@ for visible_position in field_of_view(&sample_map, from, radius) {
     // (…)
 }
 
-if let Some(path) = astar_path(&sample_map, from, to) {
+if let Some(path) = astar_path_fourwaygrid(&sample_map, from, to) {
     // (…)
 }
 ```
