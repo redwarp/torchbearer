@@ -3,7 +3,7 @@ use pixels::{Error, Pixels, SurfaceTexture};
 use tiny_skia::{
     FilterQuality, LineCap, Paint, PathBuilder, Pixmap, PixmapPaint, Rect, Stroke, Transform,
 };
-use torchbearer::{path::astar_path_fourwaygrid, Map, Point};
+use torchbearer::{fov::field_of_view, path::astar_path_fourwaygrid, Map, Point};
 use winit::{
     dpi::{LogicalPosition, LogicalSize, PhysicalSize},
     event::Event,
@@ -22,6 +22,7 @@ struct Rendering {
     from: (i32, i32),
     to: (i32, i32),
     lines: Vec<(f32, f32)>,
+    visible: Vec<(i32, i32)>,
     dirty: bool,
 }
 
@@ -46,6 +47,7 @@ impl Rendering {
             from,
             to,
             lines: vec![],
+            visible: vec![],
             dirty: true,
         }
     }
@@ -79,6 +81,10 @@ impl ExampleMap {
                 } else {
                     vec![]
                 };
+            rendering.visible = field_of_view(self, rendering.from, 8)
+                .into_iter()
+                .filter(|&position| self.is_transparent(position))
+                .collect();
             rendering.dirty = false;
         }
 
@@ -122,6 +128,25 @@ impl ExampleMap {
                         None,
                     );
                 }
+            }
+        }
+
+        if !rendering.visible.is_empty() {
+            paint.set_color_rgba8(0xff, 0xff, 0, 0x33);
+
+            for &(x, y) in rendering.visible.iter() {
+                pixmap.fill_rect(
+                    Rect::from_ltrb(
+                        (x * SCALE) as f32,
+                        (y * SCALE) as f32,
+                        ((x + 1) * SCALE) as f32,
+                        ((y + 1) * SCALE) as f32,
+                    )
+                    .unwrap(),
+                    &paint,
+                    Transform::default(),
+                    None,
+                );
             }
         }
 
@@ -191,8 +216,9 @@ impl Map for ExampleMap {
         (self.width, self.height)
     }
 
-    fn is_transparent(&self, _: Point) -> bool {
-        unreachable!("We don't care")
+    fn is_transparent(&self, (x, y): Point) -> bool {
+        let index = (x + y * self.width) as usize;
+        self.walkable[index]
     }
 
     fn is_walkable(&self, (x, y): Point) -> bool {

@@ -4,11 +4,8 @@
 
 A set of tools to find your path in a grid based dungeon. Field of view, pathfinding...
 
-Inspired by [tcod-rs](https://crates.io/crates/tcod) and [bracket-pathfinding](https://crates.io/crates/bracket-pathfinding),
+Inspired by [tcod-rs](https://crates.io/crates/tcod) and [bracket-pathfinding](https://crates.io/crates/bracket-pathfinding), 
 it aims to be simpler to use than tcod, without requiring a sdl2 dependency, and faster than bracket-pathfinding.
-
-The field of vision algorithm perform quite well, but the pathfinding one will need some serious optimizations to be
-competitive, as tcod is fast, really fast.
 
 # Get started
 
