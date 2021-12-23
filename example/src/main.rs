@@ -86,6 +86,8 @@ impl ExampleMap {
                 .filter(|&position| self.is_transparent(position))
                 .collect();
             rendering.dirty = false;
+        } else {
+            return;
         }
 
         let mut paint = Paint::default();
