@@ -65,3 +65,38 @@ if let Some(path) = astar_path_fourwaygrid(&sample_map, from, to) {
     // (…)
 }
 ```
+
+Even though torchbearer provides by default a pathfinding simple function for fourway grid maps (meaning, you can go north, south, east and west), you can also implement your own graph, to support other types of movements (8 ways, north, ne, east, se, south, sw, west, nw), or teleportation, or...
+You can also simply decide you want to tweak your heuristics, so that moving along roads is easier than climbing a mountain for instance.
+
+```rust
+use torchbearer::path::{astar_path, Graph, NodeId};
+
+struct MyMap {}
+
+impl Graph for MyMap {
+    // (..)
+#    fn node_count(&self) -> usize {
+#        3
+#    }
+#
+#    fn cost_between(&self, a: NodeId, b: NodeId) -> f32 {
+#        1.0
+#    }
+#
+#   fn heuristic(&self, a: NodeId, b: NodeId) -> f32 {
+#        1.0
+#    }
+#
+#    fn neighboors(&self, a: NodeId, into: &mut Vec<NodeId>) {}
+}
+
+let my_map = MyMap {};
+
+let from = (1) as NodeId;
+let to = (2) as NodeId;
+
+if let Some(path) = astar_path(&my_map, to, from) {
+    // (…)
+}
+```
