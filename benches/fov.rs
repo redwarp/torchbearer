@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use tcod::Map as TcodMap;
-use torchbearer::{Map, Point};
+use torchbearer::{fov::VisionMap, Point};
 
 const WIDTH: i32 = 45;
 const HEIGHT: i32 = 45;
@@ -19,7 +19,7 @@ pub struct SampleMap {
     height: i32,
 }
 
-impl Map for SampleMap {
+impl VisionMap for SampleMap {
     fn dimensions(&self) -> (i32, i32) {
         (self.width, self.height)
     }
@@ -27,10 +27,6 @@ impl Map for SampleMap {
     fn is_transparent(&self, (x, y): Point) -> bool {
         let index = (x + y * self.width) as usize;
         self.transparent[index]
-    }
-
-    fn is_walkable(&self, _: Point) -> bool {
-        false
     }
 }
 

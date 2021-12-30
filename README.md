@@ -9,12 +9,12 @@ it aims to be simpler to use than tcod, without requiring a sdl2 dependency, and
 
 # Get started
 
-Implement the `Map` trait, and call field of vision or pathfinding algorithm.
+Implement the `VisionMap` trait to use the field of vision algorithms, or the `PathMap` trait to use the pathfinding algorithms.
 
 ```rust
-use torchbearer::{Map, Point};
-use torchbearer::fov::field_of_view;
-use torchbearer::path::astar_path_fourwaygrid;
+use torchbearer::Point;
+use torchbearer::fov::{field_of_view, VisionMap};
+use torchbearer::path::{astar_path_fourwaygrid, PathMap};
 
 struct SampleMap {
     width: i32,
@@ -35,13 +35,19 @@ impl SampleMap {
    }
 }
 
-impl Map for SampleMap {
+impl VisionMap for SampleMap {
     fn dimensions(&self) -> (i32, i32) {
         (self.width, self.height)
     }
 
     fn is_transparent(&self, (x, y): Point) -> bool {
         self.transparent[(x + y * self.width) as usize]
+    }
+}
+
+impl PathMap for SampleMap {
+    fn dimensions(&self) -> (i32, i32) {
+        (self.width, self.height)
     }
 
     fn is_walkable(&self, (x, y): Point) -> bool {

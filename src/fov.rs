@@ -1,6 +1,15 @@
 //! Collection of utility function to calculate field of vision.
 
-use crate::{bresenham::BresenhamLine, Map, Point};
+use crate::{bresenham::BresenhamLine, Point};
+
+/// Implement the VisionMap trait to use the field of view function.
+pub trait VisionMap {
+    /// Dimension of your map, in grid size.
+    fn dimensions(&self) -> (i32, i32);
+    /// Wether it is possible or not to see through the tile at position `(x, y)`.
+    /// Used by field of view algorithm.
+    fn is_transparent(&self, position: Point) -> bool;
+}
 
 /// An implementation of the field of view algorithm using basic raycasting.
 /// Returns a vector containing all points visible from the starting position, including the starting position.
@@ -11,14 +20,14 @@ use crate::{bresenham::BresenhamLine, Map, Point};
 ///
 /// # Arguments
 ///
-/// * `map` - A struct implementing the `Map` trait.
+/// * `map` - A struct implementing the `VisionMap` trait.
 /// * `from` - The origin/center of the field of vision.
 /// * `radius` - How far the vision should go. Should be higher or equal to 0 (If 0, you only see yourself).
 ///
 /// # Examples
 /// ```
-/// use torchbearer::{Map, Point};
-/// use torchbearer::fov::field_of_view;
+/// use torchbearer::Point;
+/// use torchbearer::fov::{field_of_view, VisionMap};
 ///
 /// struct SampleMap {
 ///     width: i32,
@@ -37,18 +46,13 @@ use crate::{bresenham::BresenhamLine, Map, Point};
 ///    }
 /// }
 ///
-/// impl Map for SampleMap {
+/// impl VisionMap for SampleMap {
 ///     fn dimensions(&self) -> (i32, i32) {
 ///         (self.width, self.height)
 ///     }
 ///
 ///     fn is_transparent(&self, (x, y): Point) -> bool {
 ///         self.transparent[(x + y * self.width) as usize]
-///     }
-///
-///     fn is_walkable(&self, (x, y): Point) -> bool {
-///         // field of vision only considers transparency.
-///         unreachable!("Not used in field of view.")
 ///     }
 /// }
 ///
@@ -63,7 +67,7 @@ use crate::{bresenham::BresenhamLine, Map, Point};
 ///     // (…)
 /// }
 /// ```
-pub fn field_of_view<T: Map>(map: &T, from: Point, radius: i32) -> Vec<(i32, i32)> {
+pub fn field_of_view<T: VisionMap>(map: &T, from: Point, radius: i32) -> Vec<(i32, i32)> {
     let (x, y) = from;
     let radius_square = radius * radius;
     assert_in_bounds(map, x, y);
@@ -196,12 +200,12 @@ pub fn field_of_view<T: Map>(map: &T, from: Point, radius: i32) -> Vec<(i32, i32
         .collect()
 }
 
-fn is_out_of_bounds<M: Map>(map: &M, x: i32, y: i32) -> bool {
+fn is_out_of_bounds<M: VisionMap>(map: &M, x: i32, y: i32) -> bool {
     let (width, height) = map.dimensions();
     x < 0 || y < 0 || x >= width || y >= height
 }
 
-fn assert_in_bounds<M: Map>(map: &M, x: i32, y: i32) {
+fn assert_in_bounds<M: VisionMap>(map: &M, x: i32, y: i32) {
     let (width, height) = map.dimensions();
     if is_out_of_bounds(map, x, y) {
         panic!(
@@ -211,7 +215,7 @@ fn assert_in_bounds<M: Map>(map: &M, x: i32, y: i32) {
     }
 }
 
-fn cast_ray<T: Map>(
+fn cast_ray<T: VisionMap>(
     map: &T,
     visibles: &mut Vec<bool>,
     width: i32,
@@ -235,7 +239,7 @@ fn cast_ray<T: Map>(
     }
 }
 
-fn post_process_vision<T: Map>(
+fn post_process_vision<T: VisionMap>(
     map: &T,
     visibles: &mut Vec<bool>,
     width: i32,
@@ -274,7 +278,7 @@ mod tests {
 
     use crate::Point;
 
-    use super::{field_of_view, Map};
+    use super::{field_of_view, VisionMap};
     const WIDTH: i32 = 45;
     const HEIGHT: i32 = 45;
     const POSITION_X: i32 = 22;
@@ -295,7 +299,7 @@ mod tests {
         last_origin: (i32, i32),
     }
 
-    impl Map for SampleMap {
+    impl VisionMap for SampleMap {
         fn dimensions(&self) -> (i32, i32) {
             (self.width, self.height)
         }
@@ -303,10 +307,6 @@ mod tests {
         fn is_transparent(&self, (x, y): Point) -> bool {
             let index = (x + y * self.width) as usize;
             self.transparent[index]
-        }
-
-        fn is_walkable(&self, _: Point) -> bool {
-            false
         }
     }
 

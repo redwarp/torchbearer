@@ -2,9 +2,18 @@
 
 use std::{cmp::Ordering, collections::BinaryHeap};
 
-use crate::{Map, Point};
+use crate::Point;
 
 pub type NodeId = usize;
+
+/// Implement the Map trait to use the pathfinding functions.
+pub trait PathMap {
+    /// Dimension of your map, in grid size.
+    fn dimensions(&self) -> (i32, i32);
+    /// Wether it is possible or not to walk through the tile at position `(x, y)`.
+    /// Used by pathfinding algorithm.
+    fn is_walkable(&self, position: Point) -> bool;
+}
 
 /// An A* pathfinding implementation for a grid base map, where diagonal movements are disabled.
 /// Returns an optional vector containing the several points on the map to walk through, including the origin and destination.
@@ -22,8 +31,8 @@ pub type NodeId = usize;
 ///
 /// # Examples
 /// ```
-/// use torchbearer::{Map, Point};
-/// use torchbearer::path::astar_path_fourwaygrid;
+/// use torchbearer::Point;
+/// use torchbearer::path::{astar_path_fourwaygrid, PathMap};
 ///
 /// struct SampleMap {
 ///     width: i32,
@@ -42,14 +51,9 @@ pub type NodeId = usize;
 ///    }
 /// }
 ///
-/// impl Map for SampleMap {
+/// impl PathMap for SampleMap {
 ///     fn dimensions(&self) -> (i32, i32) {
 ///         (self.width, self.height)
-///     }
-///
-///     fn is_transparent(&self, (x, y): Point) -> bool {
-///         // pathfinding only considers walkability.
-///         unreachable!("Not used in pathfinding.")
 ///     }
 ///
 ///     fn is_walkable(&self, (x, y): Point) -> bool {
@@ -65,7 +69,7 @@ pub type NodeId = usize;
 ///     // (…)
 /// }
 /// ```
-pub fn astar_path_fourwaygrid<T: Map>(map: &T, from: Point, to: Point) -> Option<Vec<Point>> {
+pub fn astar_path_fourwaygrid<T: PathMap>(map: &T, from: Point, to: Point) -> Option<Vec<Point>> {
     let graph = FourWayGridGraph::new(map);
     astar_path(&graph, graph.point_to_index(from), graph.point_to_index(to)).map(|indices| {
         indices
@@ -91,8 +95,8 @@ pub fn astar_path_fourwaygrid<T: Map>(map: &T, from: Point, to: Point) -> Option
 ///
 /// # Examples
 /// ```
-/// use torchbearer::{Map, Point};
-/// use torchbearer::path::{astar_path, FourWayGridGraph};
+/// use torchbearer::Point;
+/// use torchbearer::path::{astar_path, PathMap, FourWayGridGraph};
 ///
 /// struct SampleMap {
 ///     width: i32,
@@ -111,14 +115,9 @@ pub fn astar_path_fourwaygrid<T: Map>(map: &T, from: Point, to: Point) -> Option
 ///    }
 /// }
 ///
-/// impl Map for SampleMap {
+/// impl PathMap for SampleMap {
 ///     fn dimensions(&self) -> (i32, i32) {
 ///         (self.width, self.height)
-///     }
-///
-///     fn is_transparent(&self, (x, y): Point) -> bool {
-///         // pathfinding only considers walkability.
-///         unreachable!("Not used in pathfinding.")
 ///     }
 ///
 ///     fn is_walkable(&self, (x, y): Point) -> bool {
@@ -283,13 +282,13 @@ pub trait Graph {
 
 /// A wrapper around a Map, representing the graph for a four way grid type of Map, where
 /// it's possible to go north, east, south and west, but not in diagonal.
-pub struct FourWayGridGraph<'a, T: Map> {
+pub struct FourWayGridGraph<'a, T: PathMap> {
     map: &'a T,
     width: i32,
     height: i32,
 }
 
-impl<'a, T: Map> FourWayGridGraph<'a, T> {
+impl<'a, T: PathMap> FourWayGridGraph<'a, T> {
     pub fn new(map: &'a T) -> Self {
         let (width, height) = map.dimensions();
         FourWayGridGraph { map, width, height }
@@ -309,7 +308,7 @@ impl<'a, T: Map> FourWayGridGraph<'a, T> {
     }
 }
 
-impl<'a, T: Map> Graph for FourWayGridGraph<'a, T> {
+impl<'a, T: PathMap> Graph for FourWayGridGraph<'a, T> {
     fn node_count(&self) -> usize {
         (self.width * self.height) as usize
     }
@@ -336,7 +335,7 @@ impl<'a, T: Map> Graph for FourWayGridGraph<'a, T> {
     fn neighboors(&self, a: NodeId, into: &mut Vec<NodeId>) {
         let (x, y) = self.index_to_point(a);
 
-        fn add_to_neighboors_if_qualified<'a, T: Map>(
+        fn add_to_neighboors_if_qualified<'a, T: PathMap>(
             graph: &FourWayGridGraph<'a, T>,
             (x, y): Point,
             into: &mut Vec<NodeId>,
@@ -356,9 +355,9 @@ impl<'a, T: Map> Graph for FourWayGridGraph<'a, T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{bresenham::BresenhamLine, Map, Point};
+    use crate::{bresenham::BresenhamLine, Point};
 
-    use super::astar_path_fourwaygrid;
+    use super::{astar_path_fourwaygrid, PathMap};
 
     struct SampleMap {
         width: i32,
@@ -383,13 +382,9 @@ mod tests {
         }
     }
 
-    impl Map for SampleMap {
+    impl PathMap for SampleMap {
         fn dimensions(&self) -> (i32, i32) {
             (self.width, self.height)
-        }
-
-        fn is_transparent(&self, _: Point) -> bool {
-            todo!("Not needed for pathfinding.");
         }
 
         fn is_walkable(&self, (x, y): Point) -> bool {

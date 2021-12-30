@@ -3,8 +3,8 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use tcod::Map as TcodMap;
 use torchbearer::{
     bresenham::BresenhamLine,
-    path::{astar_path, astar_path_fourwaygrid, FourWayGridGraph},
-    Map, Point,
+    path::{astar_path, astar_path_fourwaygrid, FourWayGridGraph, PathMap},
+    Point,
 };
 
 const WIDTH: i32 = 20;
@@ -50,13 +50,9 @@ impl TestMap {
     }
 }
 
-impl Map for TestMap {
+impl PathMap for TestMap {
     fn dimensions(&self) -> (i32, i32) {
         (self.width, self.height)
-    }
-
-    fn is_transparent(&self, _: Point) -> bool {
-        todo!("Not necessary for the bench");
     }
 
     fn is_walkable(&self, (x, y): Point) -> bool {

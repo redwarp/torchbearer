@@ -3,7 +3,11 @@ use pixels::{Error, Pixels, SurfaceTexture};
 use tiny_skia::{
     FilterQuality, LineCap, Paint, PathBuilder, Pixmap, PixmapPaint, Rect, Stroke, Transform,
 };
-use torchbearer::{fov::field_of_view, path::astar_path_fourwaygrid, Map, Point};
+use torchbearer::{
+    fov::{field_of_view, VisionMap},
+    path::{astar_path_fourwaygrid, PathMap},
+    Point,
+};
 use winit::{
     dpi::{LogicalPosition, LogicalSize, PhysicalSize},
     event::Event,
@@ -213,7 +217,7 @@ impl ExampleMap {
     }
 }
 
-impl Map for ExampleMap {
+impl VisionMap for ExampleMap {
     fn dimensions(&self) -> (i32, i32) {
         (self.width, self.height)
     }
@@ -221,6 +225,12 @@ impl Map for ExampleMap {
     fn is_transparent(&self, (x, y): Point) -> bool {
         let index = (x + y * self.width) as usize;
         self.walkable[index]
+    }
+}
+
+impl PathMap for ExampleMap {
+    fn dimensions(&self) -> (i32, i32) {
+        (self.width, self.height)
     }
 
     fn is_walkable(&self, (x, y): Point) -> bool {
