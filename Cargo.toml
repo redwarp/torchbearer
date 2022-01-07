@@ -1,6 +1,6 @@
 [package]
 name = "torchbearer"
-version = "0.5.1"
+version = "0.5.2"
 authors = ["Redwarp <redwarp@gmail.com>"]
 edition = "2021"
 description = "Find your path in darkerer dungeons."
