@@ -20,6 +20,7 @@ jobs:
         run: cargo build --verbose --all
       - name: Install test dependencies
         run: |
-          sudo apt-get install gcc g++ make libsdl2-dev
+          sudo apt update
+          sudo apt install gcc g++ make libsdl2-dev
       - name: Run tests
         run: cargo test --verbose --all
