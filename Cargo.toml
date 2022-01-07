@@ -26,6 +26,10 @@ harness = false
 name = "path"
 harness = false
 
+[[bench]]
+name = "bresenham"
+harness = false
+
 [workspace]
 members = ["example"]
 resolver = "2"

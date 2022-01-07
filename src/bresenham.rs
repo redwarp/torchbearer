@@ -42,7 +42,6 @@ pub struct BresenhamLine {
     dx: i32,
     dy: i32,
     x1: i32,
-    y1: i32,
     diff: i32,
     octant: Octant,
 }
@@ -127,7 +126,6 @@ impl BresenhamLine {
             dx,
             dy,
             x1: end.0,
-            y1: end.1,
             diff: dy - dx,
             octant,
         }
@@ -141,12 +139,6 @@ impl Iterator for BresenhamLine {
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        if self.x == self.x1 {
-            self.x += 1;
-            let p = (self.x1, self.y1);
-            return Some(self.octant.from_octant0(p));
-        }
-
         if self.x > self.x1 {
             return None;
         }
