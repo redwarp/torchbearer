@@ -78,7 +78,7 @@ impl Octant {
     }
 
     #[inline]
-    fn to_octant0(&self, p: Point) -> Point {
+    fn point_to_octant(&self, p: Point) -> Point {
         match self.0 {
             0 => (p.0, p.1),
             1 => (p.1, p.0),
@@ -93,7 +93,7 @@ impl Octant {
     }
 
     #[inline]
-    fn from_octant0(&self, p: Point) -> Point {
+    fn point_from_octant(&self, p: Point) -> Point {
         match self.0 {
             0 => (p.0, p.1),
             1 => (p.1, p.0),
@@ -114,8 +114,8 @@ impl BresenhamLine {
     pub fn new(start: Point, end: Point) -> BresenhamLine {
         let octant = Octant::from_points(start, end);
 
-        let start = octant.to_octant0(start);
-        let end = octant.to_octant0(end);
+        let start = octant.point_to_octant(start);
+        let end = octant.point_to_octant(end);
 
         let dx = end.0 - start.0;
         let dy = end.1 - start.1;
@@ -155,7 +155,7 @@ impl Iterator for BresenhamLine {
         // loop inc
         self.x += 1;
 
-        Some(self.octant.from_octant0(p))
+        Some(self.octant.point_from_octant(p))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

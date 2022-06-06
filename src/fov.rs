@@ -217,7 +217,7 @@ fn assert_in_bounds<M: VisionMap>(map: &M, x: i32, y: i32) {
 
 fn cast_ray<T: VisionMap>(
     map: &T,
-    visibles: &mut Vec<bool>,
+    visibles: &mut [bool],
     width: i32,
     origin: Point,
     destination: Point,
@@ -241,7 +241,7 @@ fn cast_ray<T: VisionMap>(
 
 fn post_process_vision<T: VisionMap>(
     map: &T,
-    visibles: &mut Vec<bool>,
+    visibles: &mut [bool],
     width: i32,
     min: (i32, i32),
     max: (i32, i32),
