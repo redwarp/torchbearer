@@ -7,9 +7,9 @@ edition = "2021"
 [dependencies]
 pixels = "0.9"
 find_folder = "0.3"
-winit = "0.26"
-winit_input_helper = "0.12"
+winit = "0.27"
+winit_input_helper = "0.13"
 env_logger = "0.9"
 log = "0.4"
-tiny-skia = "0.6"
+tiny-skia = "0.8"
 torchbearer = { path = ".." }
