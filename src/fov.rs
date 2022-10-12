@@ -26,8 +26,10 @@ pub trait VisionMap {
 ///
 /// # Examples
 /// ```
-/// use torchbearer::Point;
-/// use torchbearer::fov::{field_of_view, VisionMap};
+/// use torchbearer::{
+///     fov::{field_of_view, VisionMap},
+///     Point,
+/// };
 ///
 /// struct SampleMap {
 ///     width: i32,
@@ -37,13 +39,13 @@ pub trait VisionMap {
 ///
 /// impl SampleMap {
 ///     fn new(width: i32, height: i32) -> Self {
-///          // (…)
+///         // (…)
 /// #        SampleMap {
 /// #            width,
 /// #            height,
 /// #            transparent: vec![true; (width * height) as usize],
 /// #        }
-///    }
+///     }
 /// }
 ///
 /// impl VisionMap for SampleMap {
@@ -59,7 +61,7 @@ pub trait VisionMap {
 /// let sample_map = SampleMap::new(16, 10);
 ///
 /// // (…) You probably want at this point to add some walls to your map.
-/// let from = (1,1);
+/// let from = (1, 1);
 /// let radius = 5;
 /// let visible_positions = field_of_view(&sample_map, from, radius);
 ///

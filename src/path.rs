@@ -31,8 +31,10 @@ pub trait PathMap {
 ///
 /// # Examples
 /// ```
-/// use torchbearer::Point;
-/// use torchbearer::path::{astar_path_fourwaygrid, PathMap};
+/// use torchbearer::{
+///     path::{astar_path_fourwaygrid, PathMap},
+///     Point,
+/// };
 ///
 /// struct SampleMap {
 ///     width: i32,
@@ -42,13 +44,13 @@ pub trait PathMap {
 ///
 /// impl SampleMap {
 ///     fn new(width: i32, height: i32) -> Self {
-///          // (…)
+///         // (…)
 /// #        SampleMap {
 /// #            width,
 /// #            height,
 /// #            walkable: vec![true; (width * height) as usize],
 /// #        }
-///    }
+///     }
 /// }
 ///
 /// impl PathMap for SampleMap {
@@ -65,7 +67,7 @@ pub trait PathMap {
 ///
 /// // (…) You probably want at this point to add some walls to your map.
 ///
-/// if let Some(path) = astar_path_fourwaygrid(&sample_map, (1,1), (3,8)) {
+/// if let Some(path) = astar_path_fourwaygrid(&sample_map, (1, 1), (3, 8)) {
 ///     // (…)
 /// }
 /// ```
@@ -95,8 +97,10 @@ pub fn astar_path_fourwaygrid<T: PathMap>(map: &T, from: Point, to: Point) -> Op
 ///
 /// # Examples
 /// ```
-/// use torchbearer::Point;
-/// use torchbearer::path::{astar_path, PathMap, FourWayGridGraph};
+/// use torchbearer::{
+///     path::{astar_path, FourWayGridGraph, PathMap},
+///     Point,
+/// };
 ///
 /// struct SampleMap {
 ///     width: i32,
@@ -106,13 +110,13 @@ pub fn astar_path_fourwaygrid<T: PathMap>(map: &T, from: Point, to: Point) -> Op
 ///
 /// impl SampleMap {
 ///     fn new(width: i32, height: i32) -> Self {
-///          // (…)
+///         // (…)
 /// #        SampleMap {
 /// #            width,
 /// #            height,
 /// #            walkable: vec![true; (width * height) as usize],
 /// #        }
-///    }
+///     }
 /// }
 ///
 /// impl PathMap for SampleMap {

@@ -176,7 +176,7 @@ impl Iterator for BresenhamLine {
 ///
 /// let center = (0, 0);
 /// let radius = 2;
-/// for (x,y) in BresenhamCircle::new(center, radius) {
+/// for (x, y) in BresenhamCircle::new(center, radius) {
 ///     println!("{}, {}", x, y);
 /// }
 /// ```
@@ -265,8 +265,7 @@ impl Iterator for BresenhamCircle {
 
 #[cfg(test)]
 mod tests {
-    use super::BresenhamCircle;
-    use super::BresenhamLine;
+    use super::{BresenhamCircle, BresenhamLine};
     use std::vec::Vec;
 
     #[test]
