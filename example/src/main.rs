@@ -9,7 +9,7 @@ use torchbearer::{
     Point,
 };
 use winit::{
-    dpi::{LogicalPosition, LogicalSize, PhysicalSize},
+    dpi::{LogicalPosition, PhysicalSize},
     event::Event,
     event_loop::{ControlFlow, EventLoop},
 };
@@ -257,7 +257,7 @@ fn main() -> Result<(), Error> {
 
     event_loop.run(move |event, _, control_flow| {
         if let Event::RedrawRequested(_) = event {
-            map.draw(pixels.get_frame(), &mut rendering);
+            map.draw(pixels.get_frame_mut(), &mut rendering);
             if pixels
                 .render()
                 .map_err(|e| error!("pixels.render() failed: {}", e))
@@ -294,7 +294,7 @@ fn main() -> Result<(), Error> {
             }
             // Resize the window
             if let Some(size) = input.window_resized() {
-                pixels.resize_surface(size.width, size.height);
+                pixels.resize_surface(size.width, size.height).unwrap();
             }
 
             window.request_redraw();
@@ -328,15 +328,14 @@ fn create_window(
     let scale = (monitor_height / height * 2.0 / 3.0).round().max(1.0);
 
     // Resize, center, and display the window
-    let min_size: winit::dpi::LogicalSize<f64> =
+    let default_size: winit::dpi::LogicalSize<f64> =
         PhysicalSize::new(width, height).to_logical(hidpi_factor);
-    let default_size = LogicalSize::new(width * scale, height * scale);
     let center = LogicalPosition::new(
         (monitor_width - width * scale) / 2.0,
         (monitor_height - height * scale) / 2.0,
     );
     window.set_inner_size(default_size);
-    window.set_min_inner_size(Some(min_size));
+    window.set_min_inner_size(Some(default_size));
     window.set_outer_position(center);
     window.set_visible(true);
 
