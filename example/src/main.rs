@@ -1,7 +1,7 @@
 use log::error;
 use pixels::{Error, Pixels, SurfaceTexture};
 use tiny_skia::{
-    FilterQuality, LineCap, Paint, PathBuilder, Pixmap, PixmapPaint, Rect, Stroke, Transform,
+    Color, FilterQuality, LineCap, Paint, PathBuilder, Pixmap, PixmapPaint, Rect, Stroke, Transform,
 };
 use torchbearer::{
     fov::{field_of_view, VisionMap},
@@ -85,10 +85,7 @@ impl ExampleMap {
                 } else {
                     vec![]
                 };
-            rendering.visible = field_of_view(self, rendering.from, 8)
-                .into_iter()
-                .filter(|&position| self.is_transparent(position))
-                .collect();
+            rendering.visible = field_of_view(self, rendering.from, 8);
             rendering.dirty = false;
         } else {
             return;
@@ -103,6 +100,8 @@ impl ExampleMap {
         };
 
         let pixmap = &mut rendering.pixmap;
+        pixmap.fill(Color::WHITE);
+
         pixmap.fill_rect(
             Rect::from_ltrb(
                 0 as f32,
