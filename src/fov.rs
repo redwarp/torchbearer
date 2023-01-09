@@ -112,6 +112,7 @@ pub fn field_of_view<T: VisionMap>(map: &T, from: Point, radius: i32) -> Vec<(i3
             map,
             &mut visibles,
             sub_width,
+            sub_height,
             from,
             point,
             (offset_x, offset_y),
@@ -153,15 +154,16 @@ fn cast_ray<T: VisionMap>(
     map: &T,
     visibles: &mut [bool],
     width: i32,
+    height: i32,
     origin: Point,
     destination: Point,
     offset: (i32, i32),
 ) {
     // We skip the first item as it is the origin position.
-    let bresenham = BresenhamLine::new(origin, destination).skip(1);
-    for (x, y) in bresenham {
+    let ray = BresenhamLine::new(origin, destination).skip(1);
+    for (x, y) in ray {
         let (off_x, off_y) = (x - offset.0, y - offset.1);
-        if off_x < 0 || off_y < 0 {
+        if off_x < 0 || off_y < 0 || off_x >= width || off_y >= height {
             // No need to continue the ray, we are out of bounds.
             return;
         }
@@ -242,19 +244,6 @@ mod tests {
             }
             self.last_origin = (x, y);
         }
-
-        pub fn calculate_fov2(&mut self, x: i32, y: i32, radius: i32) {
-            for see in self.vision.iter_mut() {
-                *see = false;
-            }
-
-            let visibles = field_of_view(self, (x, y), radius);
-
-            for (x, y) in visibles {
-                self.vision[(x + y * self.width) as usize] = true
-            }
-            self.last_origin = (x, y);
-        }
     }
 
     impl Debug for SampleMap {
@@ -311,20 +300,6 @@ mod tests {
             fov.set_transparent(9, y, false);
         }
         fov.calculate_fov(3, 2, 10);
-
-        println!("{:?}", fov);
-    }
-
-    #[test]
-    fn fov_with_sample_map2() {
-        let mut fov = SampleMap::new(10, 10);
-        for x in 1..10 {
-            fov.set_transparent(x, 3, false);
-        }
-        for y in 0..10 {
-            fov.set_transparent(9, y, false);
-        }
-        fov.calculate_fov2(3, 2, 10);
 
         println!("{:?}", fov);
     }
