@@ -352,15 +352,13 @@ impl Iterator for ThickBresenhamCircle {
             if self.moved {
                 self.y += 1;
                 self.moved = false;
+            } else if self.err > 0 {
+                self.err += 2 * (5 - 2 * self.x + 2 * self.y);
+                self.x -= 1;
+                self.moved = true;
             } else {
-                if self.err > 0 {
-                    self.err = self.err + 2 * (5 - 2 * self.x + 2 * self.y);
-                    self.x -= 1;
-                    self.moved = true;
-                } else {
-                    self.err = self.err + 2 * (3 + 2 * self.y);
-                    self.y += 1;
-                }
+                self.err += 2 * (3 + 2 * self.y);
+                self.y += 1;
             }
 
             self.current_step += 1;
@@ -389,7 +387,7 @@ impl Iterator for ThickBresenhamCircle {
             self.octant = -1;
         }
 
-        return Some(point);
+        Some(point)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
