@@ -17,9 +17,14 @@ pub trait VisionMap {
 /// An implementation of the field of view algorithm using basic raycasting.
 /// Returns a vector containing all points visible from the starting position, including the starting position.
 ///
-/// Implement the algorithm found on the [visibility determination](https://sites.google.com/site/jicenospam/visibilitydetermination).
+/// Adapted the algorithm found on the [visibility determination](https://sites.google.com/site/jicenospam/visibilitydetermination).
 /// For a comparison of the different raycasting types, advantages and disavantages, see
 /// [roguebasin's comparison](http://www.roguebasin.com/index.php?title=Comparative_study_of_field_of_view_algorithms_for_2D_grid_based_worlds)
+///
+/// It differs from the original algorithm in the way it decides where to cast rays: It uses a circle around the
+/// center instead of a square, which avoids the necessity of error correction.
+///
+/// The result is more homogeneous and faster.
 ///
 /// # Arguments
 ///
