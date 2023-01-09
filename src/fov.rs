@@ -1,6 +1,9 @@
 //! Collection of utility function to calculate field of vision.
 
-use crate::{bresenham::BresenhamLine, Point};
+use crate::{
+    bresenham::{BresenhamLine, ThickBresenhamCircle},
+    Point,
+};
 
 /// Implement the VisionMap trait to use the field of view function.
 pub trait VisionMap {
@@ -14,9 +17,14 @@ pub trait VisionMap {
 /// An implementation of the field of view algorithm using basic raycasting.
 /// Returns a vector containing all points visible from the starting position, including the starting position.
 ///
-/// Implement the algorithm found on the [visibility determination](https://sites.google.com/site/jicenospam/visibilitydetermination).
+/// Adapted the algorithm found on the [visibility determination](https://sites.google.com/site/jicenospam/visibilitydetermination).
 /// For a comparison of the different raycasting types, advantages and disavantages, see
 /// [roguebasin's comparison](http://www.roguebasin.com/index.php?title=Comparative_study_of_field_of_view_algorithms_for_2D_grid_based_worlds)
+///
+/// It differs from the original algorithm in the way it decides where to cast rays: It uses a circle around the
+/// center instead of a square, which avoids the necessity of error correction.
+///
+/// The result is more homogeneous and faster.
 ///
 /// # Arguments
 ///
@@ -71,7 +79,6 @@ pub trait VisionMap {
 /// ```
 pub fn field_of_view<T: VisionMap>(map: &T, from: Point, radius: i32) -> Vec<(i32, i32)> {
     let (x, y) = from;
-    let radius_square = radius * radius;
     assert_in_bounds(map, x, y);
     if radius < 0 {
         panic!("A radius >= 0 is required, you used {}", radius);
@@ -95,96 +102,22 @@ pub fn field_of_view<T: VisionMap>(map: &T, from: Point, radius: i32) -> Vec<(i3
 
     let (sub_width, sub_height) = (maxx - minx + 1, maxy - miny + 1);
     let (offset_x, offset_y) = (minx, miny);
-    let sub_origin = (x - offset_x, y - offset_y);
 
     let mut visibles = vec![false; (sub_width * sub_height) as usize];
     // Set origin as visible.
     visibles[(x - offset_x + (y - offset_y) * sub_width) as usize] = true;
 
-    for x in minx..maxx + 1 {
+    for point in ThickBresenhamCircle::new(from, radius) {
         cast_ray(
             map,
             &mut visibles,
             sub_width,
-            sub_origin,
-            (x - offset_x, miny - offset_y),
-            radius_square,
-            (offset_x, offset_y),
-        );
-        cast_ray(
-            map,
-            &mut visibles,
-            sub_width,
-            sub_origin,
-            (x - offset_x, maxy - offset_y),
-            radius_square,
+            sub_height,
+            from,
+            point,
             (offset_x, offset_y),
         );
     }
-    for y in miny + 1..maxy {
-        cast_ray(
-            map,
-            &mut visibles,
-            sub_width,
-            sub_origin,
-            (minx - offset_x, y - offset_y),
-            radius_square,
-            (offset_x, offset_y),
-        );
-        cast_ray(
-            map,
-            &mut visibles,
-            sub_width,
-            sub_origin,
-            (maxx - offset_x, y - offset_y),
-            radius_square,
-            (offset_x, offset_y),
-        );
-    }
-
-    // SE
-    post_process_vision(
-        map,
-        &mut visibles,
-        sub_width,
-        (x - offset_x + 1, y - offset_y + 1),
-        (maxx - offset_x, maxy - offset_y),
-        (-1, -1),
-        (offset_x, offset_y),
-    );
-
-    // SW
-    post_process_vision(
-        map,
-        &mut visibles,
-        sub_width,
-        (minx - offset_x, y - offset_y + 1),
-        (x - offset_x - 1, maxy - offset_y),
-        (1, -1),
-        (offset_x, offset_y),
-    );
-
-    // NW
-    post_process_vision(
-        map,
-        &mut visibles,
-        sub_width,
-        (minx - offset_x, miny - offset_y),
-        (x - offset_x - 1, y - offset_y - 1),
-        (1, 1),
-        (offset_x, offset_y),
-    );
-
-    // NE
-    post_process_vision(
-        map,
-        &mut visibles,
-        sub_width,
-        (x - offset_x + 1, miny - offset_y),
-        (maxx - offset_x, y - offset_y - 1),
-        (-1, 1),
-        (offset_x, offset_y),
-    );
 
     visibles
         .into_iter()
@@ -221,54 +154,23 @@ fn cast_ray<T: VisionMap>(
     map: &T,
     visibles: &mut [bool],
     width: i32,
+    height: i32,
     origin: Point,
     destination: Point,
-    radius_square: i32,
     offset: (i32, i32),
 ) {
-    let (origin_x, origin_y) = origin;
-    let bresenham = BresenhamLine::new(origin, destination).skip(1);
-    for (x, y) in bresenham {
-        let distance_square = (x - origin_x) * (x - origin_x) + (y - origin_y) * (y - origin_y);
-        // If we are within radius.
-        if distance_square <= radius_square {
-            visibles[(x + y * width) as usize] = true;
-        }
-
-        if !map.is_transparent((x + offset.0, y + offset.1)) {
+    // We skip the first item as it is the origin position.
+    let ray = BresenhamLine::new(origin, destination).skip(1);
+    for (x, y) in ray {
+        let (off_x, off_y) = (x - offset.0, y - offset.1);
+        if off_x < 0 || off_y < 0 || off_x >= width || off_y >= height {
+            // No need to continue the ray, we are out of bounds.
             return;
         }
-    }
-}
+        visibles[(off_x + off_y * width) as usize] = true;
 
-fn post_process_vision<T: VisionMap>(
-    map: &T,
-    visibles: &mut [bool],
-    width: i32,
-    min: (i32, i32),
-    max: (i32, i32),
-    diff: (i32, i32),
-    offset: (i32, i32),
-) {
-    for x in min.0..=max.0 {
-        for y in min.1..=max.1 {
-            let index = (x + y * width) as usize;
-            let is_see_through = map.is_transparent((x + offset.0, y + offset.1));
-            if !is_see_through && !visibles[index] {
-                // We check for walls that are not in vision only.
-                let neighboor_x = x + diff.0;
-                let neighboor_y = y + diff.1;
-
-                let index_0 = (neighboor_x + y * width) as usize;
-                let index_1 = (x + neighboor_y * width) as usize;
-
-                if (map.is_transparent((neighboor_x + offset.0, y + offset.1)) && visibles[index_0])
-                    || (map.is_transparent((x + offset.0, neighboor_y + offset.1))
-                        && visibles[index_1])
-                {
-                    visibles[index] = true;
-                }
-            }
+        if !map.is_transparent((x, y)) {
+            return;
         }
     }
 }
@@ -387,6 +289,7 @@ mod tests {
             write!(f, "{}", display_string)
         }
     }
+
     #[test]
     fn fov_with_sample_map() {
         let mut fov = SampleMap::new(10, 10);
