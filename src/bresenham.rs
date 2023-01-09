@@ -263,9 +263,146 @@ impl Iterator for BresenhamCircle {
     }
 }
 
+/// Iterator-based Bresenham's circle drawing algorithm with a twist:
+///
+/// This will output each element of the circle, not ordered (because following octant), and making
+/// sure that each point of the circle move step by step, by x or y but not both at once.
+///
+/// This is needed for a fiew of view implementation that cast rays from the center of the circle all around,
+/// making sure to not miss any point and avoid blind spots.
+///
+/// # Example
+///
+/// ```
+/// use torchbearer::bresenham::ThickBresenhamCircle;
+///
+/// let center = (0, 0);
+/// let radius = 2;
+/// for (x, y) in ThickBresenhamCircle::new(center, radius) {
+///     println!("{}, {}", x, y);
+/// }
+/// ```
+///
+/// Will print
+///
+/// ```text
+/// (-2, -1)
+/// (-2, 0)
+/// (-2, 1)
+/// (-1, -2)
+/// (-1, -1)                  . . . . . . .
+/// (-1, 1)                   . . # # # . .
+/// (-1, 2)                   . # # . # # .
+/// (0, -2) corresponding to  . # . x . # .
+/// (0, 2)                    . # # . # # .
+/// (1, -2)                   . . # # # . .
+/// (1, -1)                   . . . . . . .
+/// (1, 1)
+/// (1, 2)
+/// (2, -1)
+/// (2, 0)
+/// (2, 1)
+/// ```
+pub struct ThickBresenhamCircle {
+    center: Point,
+    radius: i32,
+    x: i32,
+    y: i32,
+    err: i32,
+    moved: bool,
+    octant: i8,
+    current_step: u32,
+}
+
+impl ThickBresenhamCircle {
+    pub fn new(center: Point, radius: i32) -> Self {
+        // Special case for a radius of 1: we want to make sure that the output
+        // is a square like so:
+        // . . . . . .
+        // . # # # . .
+        // . # x # . .
+        // . # # # . .
+        // . . . . . .
+        let err = if radius == 1 { -1 } else { 3 - 2 * radius };
+
+        Self {
+            center,
+            radius,
+            x: radius,
+            y: 0,
+            err,
+            moved: false,
+            octant: 0,
+            current_step: 0,
+        }
+    }
+}
+
+impl Iterator for ThickBresenhamCircle {
+    type Item = Point;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.octant == -1 {
+            if self.x <= self.y {
+                return None;
+            }
+
+            self.octant = 0;
+
+            if self.moved {
+                self.y += 1;
+                self.moved = false;
+            } else {
+                if self.err > 0 {
+                    self.err = self.err + 2 * (5 - 2 * self.x + 2 * self.y);
+                    self.x -= 1;
+                    self.moved = true;
+                } else {
+                    self.err = self.err + 2 * (3 + 2 * self.y);
+                    self.y += 1;
+                }
+            }
+
+            self.current_step += 1;
+        }
+
+        let point = match self.octant {
+            0 => (self.center.0 + self.x, self.center.1 + self.y),
+            1 => (self.center.0 + self.y, self.center.1 + self.x),
+            2 => (self.center.0 - self.y, self.center.1 + self.x),
+            3 => (self.center.0 - self.x, self.center.1 + self.y),
+            4 => (self.center.0 - self.x, self.center.1 - self.y),
+            5 => (self.center.0 - self.y, self.center.1 - self.x),
+            6 => (self.center.0 + self.y, self.center.1 - self.x),
+            7 => (self.center.0 + self.x, self.center.1 - self.y),
+            _ => unreachable!(),
+        };
+
+        let step = if self.current_step == 0 || self.x <= self.y {
+            2
+        } else {
+            1
+        };
+        if self.octant + step < 8 {
+            self.octant += step;
+        } else {
+            self.octant = -1;
+        }
+
+        return Some(point);
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let size = self.radius as usize * 8;
+        (size, Some(size))
+    }
+}
+
+impl ExactSizeIterator for ThickBresenhamCircle {}
+
 #[cfg(test)]
 mod tests {
-    use super::{BresenhamCircle, BresenhamLine};
+    use super::{BresenhamCircle, BresenhamLine, ThickBresenhamCircle};
     use std::vec::Vec;
 
     #[test]
@@ -315,7 +452,7 @@ mod tests {
     }
 
     #[test]
-    fn circle_contiguous() {
+    fn bresenham_circle_contiguous() {
         let circle = BresenhamCircle::new((0, 0), 2);
 
         let res: Vec<_> = circle.collect();
@@ -337,5 +474,36 @@ mod tests {
                 (2, -1)
             ]
         );
+    }
+
+    #[test]
+    fn circle_predictable_length() {
+        let circle = ThickBresenhamCircle::new((0, 0), 3);
+
+        let points = circle.collect::<Vec<_>>();
+
+        assert_eq!(24, points.len());
+    }
+
+    #[test]
+    fn circle_radius_1_is_square() {
+        let circle = ThickBresenhamCircle::new((0, 0), 1);
+
+        let mut expected = vec![
+            (0, 1),
+            (1, 1),
+            (1, 0),
+            (1, -1),
+            (0, -1),
+            (-1, -1),
+            (-1, 0),
+            (-1, 1),
+        ];
+        expected.sort();
+
+        let mut result = circle.collect::<Vec<_>>();
+        result.sort();
+
+        assert_eq!(expected, result);
     }
 }
