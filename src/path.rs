@@ -29,6 +29,10 @@ pub trait PathMap {
 /// * `from` - the origin.
 /// * `to` - the destination.
 ///
+/// # Panics
+///
+/// Panics if `from` or `to` are out of bounds of the map.
+///
 /// # Examples
 /// ```
 /// use torchbearer::{
@@ -72,6 +76,19 @@ pub trait PathMap {
 /// }
 /// ```
 pub fn astar_path_fourwaygrid<T: PathMap>(map: &T, from: Point, to: Point) -> Option<Vec<Point>> {
+    fn assert_in_bounds<T: PathMap>(map: &T, (x, y): Point) {
+        let (width, height) = map.dimensions();
+        if x < 0 || y < 0 || x >= width || y >= height {
+            panic!(
+                "(x, y) should be between (0,0) and ({}, {}), got ({}, {}).",
+                width, height, x, y
+            );
+        }
+    }
+
+    assert_in_bounds(map, from);
+    assert_in_bounds(map, to);
+
     let graph = FourWayGridGraph::new(map);
     astar_path(&graph, graph.point_to_index(from), graph.point_to_index(to)).map(|indices| {
         indices
@@ -92,8 +109,12 @@ pub fn astar_path_fourwaygrid<T: PathMap>(map: &T, from: Point, to: Point) -> Op
 /// # Arguments
 ///
 /// * `graph` - a struct implementing the `Graph` trait.
-/// * `from` - the origin.
-/// * `to` - the destination.
+/// * `from_index` - the origin.
+/// * `to_index` - the destination.
+///
+/// # Panics
+///
+/// Panics if `from_index` or `to_index` are out of bounds. (Meaning, a bigger index that the total node count of the graph).
 ///
 /// # Examples
 /// ```
@@ -149,6 +170,18 @@ pub fn astar_path<T: Graph>(
     from_index: NodeId,
     to_index: NodeId,
 ) -> Option<Vec<NodeId>> {
+    fn assert_in_bounds<T: Graph>(graph: &T, index: NodeId) {
+        if index >= graph.node_count() {
+            panic!(
+                "Index {} is out of bounds for a graph of size {}.",
+                index,
+                graph.node_count()
+            );
+        }
+    }
+    assert_in_bounds(graph, from_index);
+    assert_in_bounds(graph, to_index);
+
     let capacity = graph.node_count() / 2;
     let mut frontier = BinaryHeap::with_capacity(capacity);
 
@@ -359,9 +392,9 @@ impl<'a, T: PathMap> Graph for FourWayGridGraph<'a, T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{bresenham::BresenhamLine, Point};
+    use crate::{bresenham::BresenhamLine, path::astar_path, Point};
 
-    use super::{astar_path_fourwaygrid, PathMap};
+    use super::{astar_path_fourwaygrid, FourWayGridGraph, PathMap};
 
     struct SampleMap {
         width: i32,
@@ -444,5 +477,22 @@ mod tests {
 
         let path = astar_path_fourwaygrid(&map, from, to);
         assert!(path.is_none());
+    }
+
+    #[test]
+    #[should_panic(expected = "Index 120 is out of bounds for a graph of size 100.")]
+    fn astar_path_out_of_bounds_index_panics() {
+        let map = SampleMap::new(10, 10);
+        let graph = FourWayGridGraph::new(&map);
+
+        astar_path(&graph, 0, 120);
+    }
+
+    #[test]
+    #[should_panic(expected = "(x, y) should be between (0,0) and (10, 10), got (0, 12).")]
+    fn astar_fourway_out_of_bounds_index_panics() {
+        let map = SampleMap::new(10, 10);
+
+        astar_path_fourwaygrid(&map, (0, 0), (0, 12));
     }
 }

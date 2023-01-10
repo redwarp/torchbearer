@@ -30,7 +30,11 @@ pub trait VisionMap {
 ///
 /// * `map` - A struct implementing the `VisionMap` trait.
 /// * `from` - The origin/center of the field of vision.
-/// * `radius` - How far the vision should go. Should be higher or equal to 0 (If 0, you only see yourself).
+/// * `radius` - How far the vision should go. Should be higher or equal to 0 (If 0 or less, you only see yourself).
+///
+/// # Panics
+///
+/// Panics if `from` is out of the map bounds.
 ///
 /// # Examples
 /// ```
@@ -80,9 +84,6 @@ pub trait VisionMap {
 pub fn field_of_view<T: VisionMap>(map: &T, from: Point, radius: i32) -> Vec<(i32, i32)> {
     let (x, y) = from;
     assert_in_bounds(map, x, y);
-    if radius < 0 {
-        panic!("A radius >= 0 is required, you used {}", radius);
-    }
 
     if radius < 1 {
         return vec![(x, y)];
@@ -144,7 +145,7 @@ fn assert_in_bounds<M: VisionMap>(map: &M, x: i32, y: i32) {
     let (width, height) = map.dimensions();
     if is_out_of_bounds(map, x, y) {
         panic!(
-            "(x, y) should be between (0,0) and ({}, {}), got ({}, {})",
+            "(x, y) should be between (0,0) and ({}, {}), got ({}, {}).",
             width, height, x, y
         );
     }
@@ -324,5 +325,14 @@ mod tests {
         fov.calculate_fov(POSITION_X, POSITION_Y, RADIUS);
 
         println!("{:?}", fov);
+    }
+
+    #[test]
+    #[should_panic(expected = "(x, y) should be between (0,0) and (45, 45), got (46, 46).")]
+    fn fov_origin_out_of_bounds_panics() {
+        let mut map = SampleMap::new(WIDTH, HEIGHT);
+        let (x, y) = (WIDTH + 1, HEIGHT + 1);
+
+        map.calculate_fov(x, y, 2);
     }
 }
