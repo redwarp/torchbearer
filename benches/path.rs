@@ -1,5 +1,7 @@
 use bracket_pathfinding::prelude::{Algorithm2D, SmallVec};
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{
+    criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, Criterion,
+};
 use tcod::Map as TcodMap;
 use torchbearer::{
     bresenham::BresenhamLine,
@@ -108,38 +110,38 @@ impl bracket_pathfinding::prelude::Algorithm2D for TestMap {
     }
 }
 
-pub fn torchbearer_astar_fourwaygrid(c: &mut Criterion) {
+pub fn torchbearer_astar_fourwaygrid(group: &mut BenchmarkGroup<WallTime>) {
     let map = TestMap::new(WIDTH, HEIGHT).with_walls();
     let from = (1, 4);
     let to = (15, 8);
 
-    c.bench_function("torchbearer_astar_fourwaygrid", |bencher| {
+    group.bench_function("torchbearer_fourwaygrid", |bencher| {
         bencher.iter(|| astar_path_fourwaygrid(&map, from, to));
     });
 }
 
-pub fn torchbearer_astar_graph(c: &mut Criterion) {
+pub fn torchbearer_astar_graph(group: &mut BenchmarkGroup<WallTime>) {
     let map = TestMap::new(WIDTH, HEIGHT).with_walls();
     let graph = FourWayGridGraph::new(&map);
     let from = (1 + 4 * WIDTH) as usize;
     let to = (15 + 8 * WIDTH) as usize;
 
-    c.bench_function("torchbearer_astar_graph", |bencher| {
+    group.bench_function("torchbearer_graph", |bencher| {
         bencher.iter(|| astar_path(&graph, from, to));
     });
 }
 
-pub fn bracket_astar(c: &mut Criterion) {
+pub fn bracket_astar(group: &mut BenchmarkGroup<WallTime>) {
     let map = TestMap::new(WIDTH, HEIGHT).with_walls();
     let start = map.point2d_to_index((1, 4).into());
     let end = map.point2d_to_index((15, 8).into());
 
-    c.bench_function("bracket_astar", |bencher| {
+    group.bench_function("bracket", |bencher| {
         bencher.iter(|| bracket_pathfinding::prelude::a_star_search(start, end, &map));
     });
 }
 
-pub fn tcod_astar(c: &mut Criterion) {
+pub fn tcod_astar(group: &mut BenchmarkGroup<WallTime>) {
     fn build_wall(map: &mut TcodMap, from: Point, to: Point) {
         let bresenham = BresenhamLine::new(from, to);
         for (x, y) in bresenham {
@@ -163,16 +165,18 @@ pub fn tcod_astar(c: &mut Criterion) {
     let from = (1, 4);
     let to = (15, 8);
 
-    c.bench_function("tcod_astar", |bencher| {
+    group.bench_function("tcod", |bencher| {
         bencher.iter(|| astar.find(from, to));
     });
 }
 
-criterion_group!(
-    benches,
-    torchbearer_astar_fourwaygrid,
-    torchbearer_astar_graph,
-    bracket_astar,
-    tcod_astar
-);
+pub fn astar(c: &mut Criterion) {
+    let mut group = c.benchmark_group("astar");
+    torchbearer_astar_fourwaygrid(&mut group);
+    torchbearer_astar_graph(&mut group);
+    bracket_astar(&mut group);
+    tcod_astar(&mut group);
+}
+
+criterion_group!(benches, astar,);
 criterion_main!(benches);

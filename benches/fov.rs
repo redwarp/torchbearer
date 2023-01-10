@@ -1,4 +1,6 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{
+    criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, Criterion,
+};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use tcod::Map as TcodMap;
 use torchbearer::{fov::VisionMap, Point};
@@ -70,23 +72,23 @@ impl SampleMap {
     }
 }
 
-pub fn torchbearer_fov_no_walls(c: &mut Criterion) {
+pub fn torchbearer_fov_no_walls(group: &mut BenchmarkGroup<WallTime>) {
     let map = SampleMap::new(WIDTH, HEIGHT);
 
-    c.bench_function("torchbearer_fov_no_walls", |bencher| {
+    group.bench_function("torchbearer", |bencher| {
         bencher.iter(|| torchbearer::fov::field_of_view(&map, (POSITION_X, POSITION_Y), RADIUS));
     });
 }
 
-pub fn torchbearer_fov_random_walls(c: &mut Criterion) {
+pub fn torchbearer_fov_random_walls(group: &mut BenchmarkGroup<WallTime>) {
     let map = SampleMap::new(WIDTH, HEIGHT).randomize_walls();
 
-    c.bench_function("torchbearer_fov_random_walls", |bencher| {
+    group.bench_function("torchbearer", |bencher| {
         bencher.iter(|| torchbearer::fov::field_of_view(&map, (POSITION_X, POSITION_Y), RADIUS));
     });
 }
 
-pub fn tcod_fov_no_walls(c: &mut Criterion) {
+pub fn tcod_fov_no_walls(group: &mut BenchmarkGroup<WallTime>) {
     let mut map = TcodMap::new(WIDTH as i32, HEIGHT as i32);
     for x in 0..WIDTH as i32 {
         for y in 0..HEIGHT as i32 {
@@ -97,12 +99,13 @@ pub fn tcod_fov_no_walls(c: &mut Criterion) {
     let x = POSITION_X as i32;
     let y = POSITION_Y as i32;
     let radius = RADIUS as i32;
-    c.bench_function("tcod_fov_no_walls", |bencher| {
+
+    group.bench_function("tcod", |bencher| {
         bencher.iter(|| map.compute_fov(x, y, radius, true, tcod::map::FovAlgorithm::Basic));
     });
 }
 
-pub fn tcod_fov_random_walls(c: &mut Criterion) {
+pub fn tcod_fov_random_walls(group: &mut BenchmarkGroup<WallTime>) {
     let mut map = TcodMap::new(WIDTH as i32, HEIGHT as i32);
     for x in 0..WIDTH as i32 {
         for y in 0..HEIGHT as i32 {
@@ -120,15 +123,15 @@ pub fn tcod_fov_random_walls(c: &mut Criterion) {
     let x = POSITION_X as i32;
     let y = POSITION_Y as i32;
     let radius = RADIUS as i32;
-    c.bench_function("tcod_fov_random_walls", |bencher| {
+    group.bench_function("tcod", |bencher| {
         bencher.iter(|| map.compute_fov(x, y, radius, true, tcod::map::FovAlgorithm::Basic));
     });
 }
 
-pub fn bracket_fov_no_walls(c: &mut Criterion) {
+pub fn bracket_fov_no_walls(group: &mut BenchmarkGroup<WallTime>) {
     let map = SampleMap::new(WIDTH, HEIGHT);
 
-    c.bench_function("bracket_fov_no_walls", |bencher| {
+    group.bench_function("bracket", |bencher| {
         bencher.iter(|| {
             bracket_pathfinding::prelude::field_of_view(
                 (POSITION_X, POSITION_Y).into(),
@@ -139,10 +142,10 @@ pub fn bracket_fov_no_walls(c: &mut Criterion) {
     });
 }
 
-pub fn bracket_fov_random_walls(c: &mut Criterion) {
+pub fn bracket_fov_random_walls(group: &mut BenchmarkGroup<WallTime>) {
     let map = SampleMap::new(WIDTH, HEIGHT).randomize_walls();
 
-    c.bench_function("bracket_fov_random_walls", |bencher| {
+    group.bench_function("bracket", |bencher| {
         bencher.iter(|| {
             bracket_pathfinding::prelude::field_of_view(
                 (POSITION_X, POSITION_Y).into(),
@@ -153,13 +156,19 @@ pub fn bracket_fov_random_walls(c: &mut Criterion) {
     });
 }
 
-criterion_group!(
-    benches,
-    torchbearer_fov_no_walls,
-    torchbearer_fov_random_walls,
-    tcod_fov_no_walls,
-    tcod_fov_random_walls,
-    bracket_fov_no_walls,
-    bracket_fov_random_walls
-);
+pub fn fov_no_walls(c: &mut Criterion) {
+    let mut group = c.benchmark_group("fov_no_walls");
+    torchbearer_fov_no_walls(&mut group);
+    tcod_fov_no_walls(&mut group);
+    bracket_fov_no_walls(&mut group);
+}
+
+pub fn fov_random_walls(c: &mut Criterion) {
+    let mut group = c.benchmark_group("fov_random_walls");
+    torchbearer_fov_random_walls(&mut group);
+    tcod_fov_random_walls(&mut group);
+    bracket_fov_random_walls(&mut group);
+}
+
+criterion_group!(benches, fov_no_walls, fov_random_walls);
 criterion_main!(benches);
