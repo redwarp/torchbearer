@@ -252,8 +252,8 @@ fn reconstruct_path(
         }
     }
     path.push(target_index);
-
-    Some(path.into_iter().rev().collect())
+    path.reverse();
+    Some(path)
 }
 
 struct State<C: PartialOrd, T> {
