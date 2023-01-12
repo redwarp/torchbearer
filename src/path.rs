@@ -354,6 +354,10 @@ impl<'a, T: PathMap> Graph for FourWayGridGraph<'a, T> {
         let basic = 1.;
         let (x1, y1) = self.index_to_point(a);
         let (x2, y2) = self.index_to_point(b);
+        // Why the nudge? Check https://www.redblobgames.com/pathfinding/a-star/implementation.html#troubleshooting-ugly-path
+        // For a path in a 4 way grid, going up 3 times then left 3 times is the same cost as
+        // going up then left then up then... So we add a small nudge to the cost to make sure
+        // the algorithm doesn't follow straight path when it could go diagonal.
         let nudge = if ((x1 + y1) % 2 == 0 && x2 != x1) || ((x1 + y1) % 2 == 1 && y2 != y1) {
             1.
         } else {
