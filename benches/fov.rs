@@ -72,6 +72,20 @@ impl SampleMap {
     }
 }
 
+impl Into<TcodMap> for SampleMap {
+    fn into(self) -> TcodMap {
+        let mut map = TcodMap::new(self.width, self.height);
+        for x in 0..self.width as i32 {
+            for y in 0..self.height as i32 {
+                let transparent = self.is_transparent((x, y));
+                map.set(x, y, transparent, transparent);
+            }
+        }
+
+        map
+    }
+}
+
 pub fn torchbearer_fov_no_walls(group: &mut BenchmarkGroup<WallTime>) {
     let map = SampleMap::new(WIDTH, HEIGHT);
 
@@ -89,42 +103,34 @@ pub fn torchbearer_fov_random_walls(group: &mut BenchmarkGroup<WallTime>) {
 }
 
 pub fn tcod_fov_no_walls(group: &mut BenchmarkGroup<WallTime>) {
-    let mut map = TcodMap::new(WIDTH as i32, HEIGHT as i32);
-    for x in 0..WIDTH as i32 {
-        for y in 0..HEIGHT as i32 {
-            map.set(x, y, true, true);
-        }
-    }
-
-    let x = POSITION_X as i32;
-    let y = POSITION_Y as i32;
-    let radius = RADIUS as i32;
+    let mut map: TcodMap = SampleMap::new(WIDTH, HEIGHT).into();
 
     group.bench_function("tcod", |bencher| {
-        bencher.iter(|| map.compute_fov(x, y, radius, true, tcod::map::FovAlgorithm::Basic));
+        bencher.iter(|| {
+            map.compute_fov(
+                POSITION_X,
+                POSITION_Y,
+                RADIUS,
+                true,
+                tcod::map::FovAlgorithm::Basic,
+            )
+        });
     });
 }
 
 pub fn tcod_fov_random_walls(group: &mut BenchmarkGroup<WallTime>) {
-    let mut map = TcodMap::new(WIDTH as i32, HEIGHT as i32);
-    for x in 0..WIDTH as i32 {
-        for y in 0..HEIGHT as i32 {
-            map.set(x, y, true, true);
-        }
-    }
+    let mut map: TcodMap = SampleMap::new(WIDTH, HEIGHT).randomize_walls().into();
 
-    let mut rng = StdRng::seed_from_u64(42);
-    for _ in 0..RANDOM_WALLS {
-        let (x, y) = (rng.gen_range(0..WIDTH), rng.gen_range(0..HEIGHT));
-        map.set(x as i32, y as i32, false, false);
-    }
-    map.set(POSITION_X as i32, POSITION_Y as i32, true, true);
-
-    let x = POSITION_X as i32;
-    let y = POSITION_Y as i32;
-    let radius = RADIUS as i32;
     group.bench_function("tcod", |bencher| {
-        bencher.iter(|| map.compute_fov(x, y, radius, true, tcod::map::FovAlgorithm::Basic));
+        bencher.iter(|| {
+            map.compute_fov(
+                POSITION_X,
+                POSITION_Y,
+                RADIUS,
+                true,
+                tcod::map::FovAlgorithm::Basic,
+            )
+        });
     });
 }
 

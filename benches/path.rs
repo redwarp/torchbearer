@@ -62,6 +62,20 @@ impl PathMap for TestMap {
     }
 }
 
+impl Into<TcodMap> for TestMap {
+    fn into(self) -> TcodMap {
+        let mut map = TcodMap::new(self.width, self.height);
+        for x in 0..self.width {
+            for y in 0..self.height {
+                let transparent = self.is_walkable((x, y));
+                map.set(x, y, transparent, transparent);
+            }
+        }
+
+        map
+    }
+}
+
 /// Implementing the BaseMap like
 /// https://bfnightly.bracketproductions.com/rustbook/chapter_7.html?highlight=pathfin#chasing-the-player
 impl bracket_pathfinding::prelude::BaseMap for TestMap {
@@ -142,24 +156,7 @@ pub fn bracket_astar(group: &mut BenchmarkGroup<WallTime>) {
 }
 
 pub fn tcod_astar(group: &mut BenchmarkGroup<WallTime>) {
-    fn build_wall(map: &mut TcodMap, from: Point, to: Point) {
-        let bresenham = BresenhamLine::new(from, to);
-        for (x, y) in bresenham {
-            map.set(x, y, false, false);
-        }
-    }
-
-    let mut map = TcodMap::new(WIDTH as i32, HEIGHT as i32);
-    for x in 0..WIDTH {
-        for y in 0..HEIGHT {
-            map.set(x, y, true, true);
-        }
-    }
-    build_wall(&mut map, (0, 3), (3, 3));
-    build_wall(&mut map, (3, 3), (3, 10));
-    build_wall(&mut map, (5, 3), (5, 19));
-    build_wall(&mut map, (7, 0), (7, 16));
-    build_wall(&mut map, (9, 1), (9, 19));
+    let map: TcodMap = TestMap::new(WIDTH, HEIGHT).with_walls().into();
 
     let mut astar = tcod::pathfinding::AStar::new_from_map(map, 0.0);
     let from = (1, 4);
