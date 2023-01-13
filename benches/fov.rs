@@ -3,7 +3,7 @@ use criterion::{
 };
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use tcod::Map as TcodMap;
-use torchbearer::{fov::VisionMap, Point};
+use torchbearer::{bresenham::Angle, fov::VisionMap, Point};
 
 const WIDTH: i32 = 45;
 const HEIGHT: i32 = 45;
@@ -102,6 +102,22 @@ pub fn torchbearer_fov_random_walls(group: &mut BenchmarkGroup<WallTime>) {
     });
 }
 
+pub fn torchbearer_circular_arc_fov_random_walls(group: &mut BenchmarkGroup<WallTime>) {
+    let map = SampleMap::new(WIDTH, HEIGHT).randomize_walls();
+
+    group.bench_function("torchbearer", |bencher| {
+        bencher.iter(|| {
+            torchbearer::fov::cone_of_view(
+                &map,
+                (POSITION_X, POSITION_Y),
+                RADIUS,
+                Angle::Degrees(-45),
+                Angle::Degrees(90),
+            )
+        });
+    });
+}
+
 pub fn tcod_fov_no_walls(group: &mut BenchmarkGroup<WallTime>) {
     let mut map: TcodMap = SampleMap::new(WIDTH, HEIGHT).into();
 
@@ -176,5 +192,15 @@ pub fn fov_random_walls(c: &mut Criterion) {
     bracket_fov_random_walls(&mut group);
 }
 
-criterion_group!(benches, fov_no_walls, fov_random_walls);
+pub fn circular_arc_fov_random_walls(c: &mut Criterion) {
+    let mut group = c.benchmark_group("circular_arc_fov_random_walls");
+    torchbearer_circular_arc_fov_random_walls(&mut group);
+}
+
+criterion_group!(
+    benches,
+    fov_no_walls,
+    fov_random_walls,
+    circular_arc_fov_random_walls
+);
 criterion_main!(benches);

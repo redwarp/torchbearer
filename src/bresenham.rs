@@ -404,10 +404,125 @@ impl Iterator for ThickBresenhamCircle {
 
 impl ExactSizeIterator for ThickBresenhamCircle {}
 
+#[derive(Debug, Clone, Copy)]
+pub enum Angle {
+    Degrees(i32),
+    Radians(f32),
+}
+
+impl Angle {
+    fn to_degrees(self) -> i32 {
+        match self {
+            Angle::Degrees(degrees) => degrees,
+            Angle::Radians(radians) => radians.to_degrees() as i32,
+        }
+        .rem_euclid(360)
+    }
+}
+
+pub struct CircularArc {
+    center: Point,
+    radius: i32,
+    start_angle: Angle,
+    sweep_angle: Angle,
+}
+
+impl CircularArc {
+    pub fn new(center: Point, radius: i32, start_angle: Angle, sweep_angle: Angle) -> Self {
+        Self {
+            center,
+            radius,
+            start_angle,
+            sweep_angle,
+        }
+    }
+
+    pub fn iter(&self) -> CircularArcIterator<ThickBresenhamCircle> {
+        CircularArcIterator::new(
+            self.start_angle,
+            self.sweep_angle,
+            self.center,
+            ThickBresenhamCircle::new((0, 0), self.radius),
+        )
+    }
+}
+
+pub struct CircularArcIterator<T>
+where
+    T: Iterator<Item = Point>,
+{
+    start_angle: i32,
+    end_angle: i32,
+    center: Point,
+    circle_iterator: T,
+}
+
+impl<T> CircularArcIterator<T>
+where
+    T: Iterator<Item = Point>,
+{
+    fn new(start_angle: Angle, sweep_angle: Angle, center: Point, circle_iterator: T) -> Self {
+        let start_angle = start_angle.to_degrees();
+        let end_angle = (start_angle + sweep_angle.to_degrees()) % 360;
+        Self {
+            start_angle,
+            end_angle,
+            center,
+            circle_iterator,
+        }
+    }
+
+    fn is_in_arc(&self, angle: i32) -> bool {
+        if self.end_angle > self.start_angle {
+            angle >= self.start_angle && angle <= self.end_angle
+        } else {
+            angle >= self.start_angle || angle <= self.end_angle
+        }
+    }
+
+    fn angle_in_degrees((x, y): Point) -> i32 {
+        if x == 0 {
+            return if y > 0 { 90 } else { 270 };
+        }
+
+        let angle = (y as f32).atan2(x as f32).to_degrees() as i32;
+        if angle < 0 {
+            angle + 360
+        } else {
+            angle
+        }
+    }
+}
+
+impl<T> Iterator for CircularArcIterator<T>
+where
+    T: Iterator<Item = Point>,
+{
+    type Item = Point;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let point = self.circle_iterator.next()?;
+            let angle = CircularArcIterator::<T>::angle_in_degrees(point);
+
+            if self.is_in_arc(angle) {
+                return Some((self.center.0 + point.0, self.center.1 + point.1));
+            }
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.circle_iterator.size_hint()
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{BresenhamCircle, BresenhamLine, ThickBresenhamCircle};
-    use std::vec::Vec;
+    use super::{Angle, BresenhamCircle, BresenhamLine, CircularArc, ThickBresenhamCircle};
+    use std::{
+        f32::consts::{FRAC_PI_2, PI},
+        vec::Vec,
+    };
 
     #[test]
     fn test_wp_example() {
@@ -509,5 +624,55 @@ mod tests {
         result.sort();
 
         assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn arc_start_90_sweep_300_is_in_arc() {
+        let arc = CircularArc::new((0, 0), 1, Angle::Degrees(90), Angle::Degrees(300));
+        let iter = arc.iter();
+
+        for angle in [20, 90, 280, 349] {
+            assert!(iter.is_in_arc(angle));
+        }
+        for angle in [31, 45, 89] {
+            assert!(!iter.is_in_arc(angle));
+        }
+    }
+
+    #[test]
+    fn arc_start_half_pi_sweep_pi_is_in_arc() {
+        let arc = CircularArc::new((0, 0), 1, Angle::Radians(FRAC_PI_2), Angle::Radians(PI));
+        let iter = arc.iter();
+
+        for angle in [90, 180, 270] {
+            assert!(iter.is_in_arc(angle));
+        }
+        for angle in [271, 45, 89] {
+            assert!(!iter.is_in_arc(angle));
+        }
+    }
+
+    #[test]
+    fn arc_start_minus_45_sweep_90_is_in_arc() {
+        let arc = CircularArc::new((0, 0), 1, Angle::Degrees(-45), Angle::Degrees(90));
+        let iter = arc.iter();
+
+        for angle in [315, 20, 45] {
+            assert!(iter.is_in_arc(angle));
+        }
+        for angle in [46, 180, 314] {
+            assert!(!iter.is_in_arc(angle));
+        }
+    }
+
+    #[test]
+    fn arc_start_minus_45_sweep_90_iter() {
+        let arc = CircularArc::new((0, 0), 2, Angle::Degrees(-45), Angle::Degrees(90));
+        let mut points = arc.iter().collect::<Vec<_>>();
+        points.sort();
+
+        let expected = [(1, -1), (1, 1), (2, -1), (2, 0), (2, 1)];
+
+        assert_eq!(points, expected);
     }
 }

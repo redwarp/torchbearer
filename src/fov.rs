@@ -1,7 +1,7 @@
 //! Collection of utility function to calculate field of vision.
 
 use crate::{
-    bresenham::{BresenhamLine, ThickBresenhamCircle},
+    bresenham::{Angle, BresenhamLine, CircularArc, ThickBresenhamCircle},
     Point,
 };
 
@@ -30,7 +30,7 @@ pub trait VisionMap {
 ///
 /// * `map` - A struct implementing the `VisionMap` trait.
 /// * `from` - The origin/center of the field of vision.
-/// * `radius` - How far the vision should go. Should be higher or equal to 0 (If 0 or less, you only see yourself).
+/// * `distance` - How far the vision should go. Should be higher or equal to 0 (If 0 or less, you only see yourself).
 ///
 /// # Panics
 ///
@@ -81,20 +81,48 @@ pub trait VisionMap {
 ///     // (…)
 /// }
 /// ```
-pub fn field_of_view<T: VisionMap>(map: &T, from: Point, radius: i32) -> Vec<(i32, i32)> {
+pub fn field_of_view<T: VisionMap>(map: &T, from: Point, distance: i32) -> Vec<(i32, i32)> {
+    view_from_rays(
+        map,
+        from,
+        distance,
+        ThickBresenhamCircle::new(from, distance),
+    )
+}
+
+pub fn cone_of_view<T: VisionMap>(
+    map: &T,
+    from: Point,
+    distance: i32,
+    start_angle: Angle,
+    sweep_angle: Angle,
+) -> Vec<(i32, i32)> {
+    view_from_rays(
+        map,
+        from,
+        distance,
+        CircularArc::new(from, distance, start_angle, sweep_angle).iter(),
+    )
+}
+
+fn view_from_rays<T, R>(map: &T, from: Point, distance: i32, points_to_cast: R) -> Vec<(i32, i32)>
+where
+    T: VisionMap,
+    R: Iterator<Item = Point>,
+{
     let (x, y) = from;
     assert_in_bounds(map, x, y);
 
-    if radius < 1 {
+    if distance < 1 {
         return vec![(x, y)];
     }
 
     let (width, height) = map.dimensions();
 
-    let minx = (x - radius).max(0);
-    let miny = (y - radius).max(0);
-    let maxx = (x + radius).min(width - 1);
-    let maxy = (y + radius).min(height - 1);
+    let minx = (x - distance).max(0);
+    let miny = (y - distance).max(0);
+    let maxx = (x + distance).min(width - 1);
+    let maxy = (y + distance).min(height - 1);
 
     if maxx - minx == 0 || maxy - miny == 0 {
         // Well, no area to check.
@@ -108,7 +136,7 @@ pub fn field_of_view<T: VisionMap>(map: &T, from: Point, radius: i32) -> Vec<(i3
     // Set origin as visible.
     visibles[(x - offset_x + (y - offset_y) * sub_width) as usize] = true;
 
-    for point in ThickBresenhamCircle::new(from, radius) {
+    for point in points_to_cast {
         cast_ray(
             map,
             &mut visibles,

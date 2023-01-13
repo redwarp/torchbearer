@@ -4,7 +4,8 @@ use tiny_skia::{
     Color, FilterQuality, LineCap, Paint, PathBuilder, Pixmap, PixmapPaint, Rect, Stroke, Transform,
 };
 use torchbearer::{
-    fov::{field_of_view, VisionMap},
+    bresenham::Angle,
+    fov::{cone_of_view, VisionMap},
     path::{astar_path_fourwaygrid, PathMap},
     Point,
 };
@@ -41,8 +42,8 @@ impl Rendering {
         let goblin = Pixmap::load_png(sprites.join("goblin.png")).unwrap();
         let target = Pixmap::load_png(sprites.join("target.png")).unwrap();
 
-        let from = (2, 2);
-        let to = (12, 8);
+        let from = (10, 10);
+        let to = (12, 18);
 
         Self {
             pixmap,
@@ -85,7 +86,13 @@ impl ExampleMap {
                 } else {
                     vec![]
                 };
-            rendering.visible = field_of_view(self, rendering.from, 8);
+            rendering.visible = cone_of_view(
+                self,
+                rendering.from,
+                10,
+                Angle::Degrees(15),
+                Angle::Degrees(70),
+            );
             rendering.dirty = false;
         } else {
             return;
@@ -245,7 +252,7 @@ fn main() -> Result<(), Error> {
     let (window, p_width, p_height, mut _hidpi_factor) = create_window("Sample", &event_loop);
 
     let surface_texture = SurfaceTexture::new(p_width, p_height, &window);
-    let mut map = ExampleMap::new(MAP_WIDTH as i32, MAP_HEIGHT as i32);
+    let mut map = ExampleMap::new(MAP_WIDTH, MAP_HEIGHT);
     map.set_walkable(2, 5, false);
     let mut pixels = Pixels::new(
         (MAP_WIDTH * SCALE) as u32,
