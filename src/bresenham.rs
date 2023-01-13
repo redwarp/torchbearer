@@ -311,7 +311,7 @@ pub struct ThickBresenhamCircle {
     err: i32,
     moved: bool,
     octant: i8,
-    current_step: u32,
+    is_first_step: bool,
 }
 
 impl ThickBresenhamCircle {
@@ -333,7 +333,7 @@ impl ThickBresenhamCircle {
             err,
             moved: false,
             octant: 0,
-            current_step: 0,
+            is_first_step: true,
         }
     }
 }
@@ -361,22 +361,28 @@ impl Iterator for ThickBresenhamCircle {
                 self.y += 1;
             }
 
-            self.current_step += 1;
+            self.is_first_step = false;
         }
 
-        let point = match self.octant {
-            0 => (self.center.0 + self.x, self.center.1 + self.y),
-            1 => (self.center.0 + self.y, self.center.1 + self.x),
-            2 => (self.center.0 - self.y, self.center.1 + self.x),
-            3 => (self.center.0 - self.x, self.center.1 + self.y),
-            4 => (self.center.0 - self.x, self.center.1 - self.y),
-            5 => (self.center.0 - self.y, self.center.1 - self.x),
-            6 => (self.center.0 + self.y, self.center.1 - self.x),
-            7 => (self.center.0 + self.x, self.center.1 - self.y),
+        let shift = match self.octant {
+            0 => (self.x, self.y),
+            1 => (self.y, self.x),
+            2 => (-self.y, self.x),
+            3 => (-self.x, self.y),
+            4 => (-self.x, -self.y),
+            5 => (-self.y, -self.x),
+            6 => (self.y, -self.x),
+            7 => (self.x, -self.y),
             _ => unreachable!(),
         };
+        let point = (self.center.0 + shift.0, self.center.1 + shift.1);
 
-        let step = if self.current_step == 0 || self.x <= self.y {
+        let step = if self.is_first_step || self.x <= self.y {
+            // First and last step of the octant, we skip 1 octant each time. Otherwise, we would get duplicated points.
+            // For a circle of center 0 and radius 2, we would get in the first set of points if we don't skip:
+            // (0, 2), (2, 0), (-2, 0), (0, 2), (0, -2), (-2, 0), (2, 0), (0, -2)
+            // So, 4 of them would be duplicates.
+            // The same logic applies for the last step.
             2
         } else {
             1
