@@ -10,8 +10,8 @@ use torchbearer::{
     Point,
 };
 
-const WIDTH: i32 = 20;
-const HEIGHT: i32 = 20;
+const WIDTH: i32 = 100;
+const HEIGHT: i32 = 100;
 
 struct TestMap {
     width: i32,
@@ -29,11 +29,11 @@ impl TestMap {
     }
 
     fn with_walls(mut self) -> Self {
-        self.build_wall((0, 3), (3, 3));
-        self.build_wall((3, 3), (3, 10));
-        self.build_wall((5, 3), (5, 19));
-        self.build_wall((7, 0), (7, 16));
-        self.build_wall((9, 1), (9, 19));
+        self.build_wall((0, 15), (15, 15));
+        self.build_wall((15, 15), (15, 50));
+        self.build_wall((25, 15), (25, 95));
+        self.build_wall((35, 0), (35, 80));
+        self.build_wall((45, 5), (45, 95));
         self
     }
 
@@ -128,8 +128,8 @@ impl bracket_pathfinding::prelude::Algorithm2D for TestMap {
 
 pub fn torchbearer_astar_fourwaygrid(group: &mut BenchmarkGroup<WallTime>) {
     let map = TestMap::new(WIDTH, HEIGHT).with_walls();
-    let from = (1, 4);
-    let to = (15, 8);
+    let from = (5, 20);
+    let to = (75, 40);
 
     group.bench_function("torchbearer_fourwaygrid", |bencher| {
         bencher.iter(|| astar_path_fourwaygrid(&map, from, to));
@@ -139,8 +139,8 @@ pub fn torchbearer_astar_fourwaygrid(group: &mut BenchmarkGroup<WallTime>) {
 pub fn torchbearer_astar_graph(group: &mut BenchmarkGroup<WallTime>) {
     let map = TestMap::new(WIDTH, HEIGHT).with_walls();
     let graph = FourWayGridGraph::new(&map);
-    let from = (1 + 4 * WIDTH) as usize;
-    let to = (15 + 8 * WIDTH) as usize;
+    let from = (5 + 20 * WIDTH) as usize;
+    let to = (75 + 40 * WIDTH) as usize;
 
     group.bench_function("torchbearer_graph", |bencher| {
         bencher.iter(|| astar_path(&graph, from, to));
@@ -149,8 +149,8 @@ pub fn torchbearer_astar_graph(group: &mut BenchmarkGroup<WallTime>) {
 
 pub fn bracket_astar(group: &mut BenchmarkGroup<WallTime>) {
     let map = TestMap::new(WIDTH, HEIGHT).with_walls();
-    let start = map.point2d_to_index((1, 4).into());
-    let end = map.point2d_to_index((15, 8).into());
+    let start = map.point2d_to_index((5, 20).into());
+    let end = map.point2d_to_index((75, 40).into());
 
     group.bench_function("bracket", |bencher| {
         bencher.iter(|| bracket_pathfinding::prelude::a_star_search(start, end, &map));
@@ -162,8 +162,8 @@ pub fn tcod_astar(group: &mut BenchmarkGroup<WallTime>) {
     let map: TcodMap = TestMap::new(WIDTH, HEIGHT).with_walls().into();
 
     let mut astar = tcod::pathfinding::AStar::new_from_map(map, 0.0);
-    let from = (1, 4);
-    let to = (15, 8);
+    let from = (5, 20);
+    let to = (75, 40);
 
     group.bench_function("tcod", |bencher| {
         bencher.iter(|| astar.find(from, to));

@@ -187,40 +187,55 @@ pub fn astar_path<T: Graph>(
 
     frontier.push(State {
         cost: 0.,
+        cost_from_start: 0.,
         item: from_index,
     });
 
-    let mut came_from: Vec<Option<usize>> = vec![None; graph.node_count()];
-    let mut costs: Vec<Option<f32>> = vec![None; graph.node_count()];
-    costs[from_index] = Some(0.);
+    // `usize::MAX` is the "no predecessor" sentinel, avoiding the 16-byte
+    // `Option<usize>` (usize has no niche) and halving this allocation.
+    let mut came_from: Vec<NodeId> = vec![usize::MAX; graph.node_count()];
+    // `f32::INFINITY` is the "not visited yet" sentinel: any real cost compares
+    // less than it, so `new_cost < costs[next]` handles the unvisited case too.
+    let mut costs: Vec<f32> = vec![f32::INFINITY; graph.node_count()];
+    costs[from_index] = 0.;
     let mut neighboors: Vec<NodeId> = Vec::with_capacity(4);
 
     let mut to_cost = 0.;
 
     while let Some(State {
         item: current_index,
-        cost: current_cost,
+        cost_from_start,
+        ..
     }) = frontier.pop()
     {
         if current_index == to_index {
-            to_cost = current_cost;
+            to_cost = cost_from_start;
             break;
+        }
+
+        // Skip stale duplicates: the heap emulates decrease-key by re-pushing a
+        // node whenever a cheaper route to it is found, leaving the older, pricier
+        // entries behind. If this entry's cost is worse than the best recorded for
+        // the node, a better one already superseded it, so expanding it is wasted
+        // work.
+        if cost_from_start > costs[current_index] {
+            continue;
         }
 
         neighboors.clear();
         graph.neighboors(current_index, &mut neighboors);
         for &next_index in neighboors.iter() {
-            let cost_so_far = costs[current_index].unwrap();
-            let new_cost = cost_so_far + graph.cost_between(current_index, next_index);
+            let new_cost = cost_from_start + graph.cost_between(current_index, next_index);
 
-            if costs[next_index].is_none() || new_cost < costs[next_index].unwrap() {
+            if new_cost < costs[next_index] {
                 let priority = new_cost + graph.heuristic(next_index, to_index);
                 frontier.push(State {
                     cost: priority,
+                    cost_from_start: new_cost,
                     item: next_index,
                 });
-                came_from[next_index] = Some(current_index);
-                costs[next_index] = Some(new_cost);
+                came_from[next_index] = current_index;
+                costs[next_index] = new_cost;
             }
         }
     }
@@ -231,25 +246,22 @@ pub fn astar_path<T: Graph>(
 fn reconstruct_path(
     from: NodeId,
     to: NodeId,
-    came_from: Vec<Option<NodeId>>,
+    came_from: Vec<NodeId>,
     cost: f32,
 ) -> Option<Vec<NodeId>> {
-    let mut current = Some(to);
+    let mut current = to;
     let target_index = from;
 
     let mut path = Vec::with_capacity((cost.floor() + 2.0) as usize);
 
-    while current != Some(target_index) {
-        if let Some(position) = current {
-            path.push(position);
-            current = if let Some(entry) = came_from[position] {
-                Some(entry)
-            } else {
-                return None;
-            }
-        } else {
+    while current != target_index {
+        path.push(current);
+        let entry = came_from[current];
+        if entry == usize::MAX {
+            // No predecessor recorded: `to` was never reached.
             return None;
         }
+        current = entry;
     }
     path.push(target_index);
     path.reverse();
@@ -257,7 +269,11 @@ fn reconstruct_path(
 }
 
 struct State<C: PartialOrd, T> {
+    /// Heap ordering key: the priority (cost from start + heuristic).
     cost: C,
+    /// The cost from the start to this node, carried alongside so a popped entry
+    /// can be checked against the best known cost without recomputing the heuristic.
+    cost_from_start: C,
     item: T,
 }
 impl<C: PartialOrd, T> PartialEq for State<C, T> {
@@ -353,12 +369,14 @@ impl<'a, T: PathMap> Graph for FourWayGridGraph<'a, T> {
     fn cost_between(&self, a: NodeId, b: NodeId) -> f32 {
         let basic = 1.;
         let (x1, y1) = self.index_to_point(a);
-        let (x2, y2) = self.index_to_point(b);
         // Why the nudge? Check https://www.redblobgames.com/pathfinding/a-star/implementation.html#troubleshooting-ugly-path
         // For a path in a 4 way grid, going up 3 times then left 3 times is the same cost as
         // going up then left then up then... So we add a small nudge to the cost to make sure
         // the algorithm doesn't follow straight path when it could go diagonal.
-        let nudge = if ((x1 + y1) % 2 == 0 && x2 != x1) || ((x1 + y1) % 2 == 1 && y2 != y1) {
+        // A horizontal step changes the index by 1, so `abs_diff == 1` gives the
+        // direction without converting `b` to a point.
+        let moves_horizontally = a.abs_diff(b) == 1;
+        let nudge = if ((x1 + y1) % 2 == 0) == moves_horizontally {
             1.
         } else {
             0.
