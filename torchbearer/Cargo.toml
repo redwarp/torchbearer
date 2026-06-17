@@ -1,0 +1,20 @@
+[package]
+name = "torchbearer"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+description.workspace = true
+readme.workspace = true
+license.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+
+[dev-dependencies]
+bracket-pathfinding = "0.8.7"
+rand = "0.10.1"
+
+[features]
