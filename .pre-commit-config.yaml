@@ -1,0 +1,13 @@
+# See https://pre-commit.com for more information.
+# Install the git hook with: pre-commit install
+repos:
+  - repo: local
+    hooks:
+      - id: cargo-fmt-nightly
+        name: cargo +nightly fmt
+        description: Format Rust code (including doc comments) with the nightly formatter.
+        entry: cargo +nightly fmt
+        args: ["--", "--config-path=nightly_rustfmt.toml"]
+        language: system
+        types: [rust]
+        pass_filenames: false
