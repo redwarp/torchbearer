@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.7.0] - 2026-06-17
+
+### Bug Fixes
+
+* Remove unecessary vec allocation
+
+### Miscellaneous Tasks
+
+* Migrate to the Rust 2024 edition
+
+### Performance
+
+* Speed up A* search loop
+* [**breaking**] Yield neighbours with their cost from the Graph trait
+
 ## [0.6.1] - 2023-01-10
 
 ### Bug Fixes
@@ -35,3 +50,5 @@
 ### Features
 
 * [**breaking**] Split the Map trait into VisionMap and PathMap
+
+## [0.4.0] - 2021-12-30
