@@ -5,11 +5,11 @@ edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-pixels = "0.11"
-find_folder = "0.3"
-winit = "0.27"
-winit_input_helper = "0.13"
-env_logger = "0.10"
-log = "0.4"
-tiny-skia = "0.8"
+pixels = "0.17.1"
+find_folder = "0.3.0"
+winit = "0.30.13"
+winit_input_helper = "0.17.0"
+env_logger = "0.11.10"
+log = "0.4.32"
+tiny-skia = "0.12.0"
 torchbearer = { path = ".." }

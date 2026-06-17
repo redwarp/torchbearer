@@ -1,7 +1,7 @@
 use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::WallTime,
 };
-use rand::{Rng, SeedableRng, rngs::StdRng};
+use rand::{RngExt, SeedableRng, rngs::StdRng};
 #[cfg(feature = "tcod")]
 use tcod::Map as TcodMap;
 use torchbearer::{Point, fov::VisionMap};
@@ -60,7 +60,7 @@ impl SampleMap {
     pub fn randomize_walls(mut self) -> Self {
         let mut rng = StdRng::seed_from_u64(42);
         for _ in 0..RANDOM_WALLS {
-            let (x, y) = (rng.gen_range(0..WIDTH), rng.gen_range(0..HEIGHT));
+            let (x, y) = (rng.random_range(0..WIDTH), rng.random_range(0..HEIGHT));
             self.set_transparent(x, y, false);
         }
         self.set_transparent(POSITION_X, POSITION_Y, true);

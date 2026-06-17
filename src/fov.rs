@@ -178,7 +178,7 @@ fn cast_ray<T: VisionMap>(
 
 #[cfg(test)]
 mod tests {
-    use rand::{Rng, SeedableRng, prelude::StdRng};
+    use rand::{RngExt, SeedableRng, prelude::StdRng};
     use std::fmt::Debug;
 
     use crate::Point;
@@ -317,7 +317,7 @@ mod tests {
         let mut fov = SampleMap::new(WIDTH, HEIGHT);
         let mut rng = StdRng::seed_from_u64(42);
         for _ in 0..RANDOM_WALLS {
-            let (x, y) = (rng.gen_range(0..WIDTH), rng.gen_range(0..HEIGHT));
+            let (x, y) = (rng.random_range(0..WIDTH), rng.random_range(0..HEIGHT));
             fov.set_transparent(x, y, false);
         }
         fov.set_transparent(POSITION_X, POSITION_Y, true);

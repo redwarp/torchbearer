@@ -17,9 +17,9 @@ keywords = ["gamedev", "pathfinding", "field-of-view"]
 tcod = { version = "0.15", optional = true }
 
 [dev-dependencies]
-bracket-pathfinding = "0.8"
-criterion = { version = "0.4", features = ["html_reports"] }
-rand = "0.8"
+bracket-pathfinding = "0.8.7"
+criterion = { version = "0.8.2", features = ["html_reports"] }
+rand = "0.10.1"
 
 [features]
 # Include the `tcod` comparison in benchmarks.
