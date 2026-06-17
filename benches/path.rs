@@ -2,6 +2,7 @@ use bracket_pathfinding::prelude::{Algorithm2D, SmallVec};
 use criterion::{
     criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, Criterion,
 };
+#[cfg(feature = "tcod")]
 use tcod::Map as TcodMap;
 use torchbearer::{
     bresenham::BresenhamLine,
@@ -62,6 +63,7 @@ impl PathMap for TestMap {
     }
 }
 
+#[cfg(feature = "tcod")]
 impl Into<TcodMap> for TestMap {
     fn into(self) -> TcodMap {
         let mut map = TcodMap::new(self.width, self.height);
@@ -155,6 +157,7 @@ pub fn bracket_astar(group: &mut BenchmarkGroup<WallTime>) {
     });
 }
 
+#[cfg(feature = "tcod")]
 pub fn tcod_astar(group: &mut BenchmarkGroup<WallTime>) {
     let map: TcodMap = TestMap::new(WIDTH, HEIGHT).with_walls().into();
 
@@ -172,6 +175,7 @@ pub fn astar(c: &mut Criterion) {
     torchbearer_astar_fourwaygrid(&mut group);
     torchbearer_astar_graph(&mut group);
     bracket_astar(&mut group);
+    #[cfg(feature = "tcod")]
     tcod_astar(&mut group);
 }
 

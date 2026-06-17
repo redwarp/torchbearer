@@ -2,6 +2,7 @@ use criterion::{
     criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, Criterion,
 };
 use rand::{rngs::StdRng, Rng, SeedableRng};
+#[cfg(feature = "tcod")]
 use tcod::Map as TcodMap;
 use torchbearer::{fov::VisionMap, Point};
 
@@ -72,6 +73,7 @@ impl SampleMap {
     }
 }
 
+#[cfg(feature = "tcod")]
 impl Into<TcodMap> for SampleMap {
     fn into(self) -> TcodMap {
         let mut map = TcodMap::new(self.width, self.height);
@@ -102,6 +104,7 @@ pub fn torchbearer_fov_random_walls(group: &mut BenchmarkGroup<WallTime>) {
     });
 }
 
+#[cfg(feature = "tcod")]
 pub fn tcod_fov_no_walls(group: &mut BenchmarkGroup<WallTime>) {
     let mut map: TcodMap = SampleMap::new(WIDTH, HEIGHT).into();
 
@@ -118,6 +121,7 @@ pub fn tcod_fov_no_walls(group: &mut BenchmarkGroup<WallTime>) {
     });
 }
 
+#[cfg(feature = "tcod")]
 pub fn tcod_fov_random_walls(group: &mut BenchmarkGroup<WallTime>) {
     let mut map: TcodMap = SampleMap::new(WIDTH, HEIGHT).randomize_walls().into();
 
@@ -165,6 +169,7 @@ pub fn bracket_fov_random_walls(group: &mut BenchmarkGroup<WallTime>) {
 pub fn fov_no_walls(c: &mut Criterion) {
     let mut group = c.benchmark_group("fov_no_walls");
     torchbearer_fov_no_walls(&mut group);
+    #[cfg(feature = "tcod")]
     tcod_fov_no_walls(&mut group);
     bracket_fov_no_walls(&mut group);
 }
@@ -172,6 +177,7 @@ pub fn fov_no_walls(c: &mut Criterion) {
 pub fn fov_random_walls(c: &mut Criterion) {
     let mut group = c.benchmark_group("fov_random_walls");
     torchbearer_fov_random_walls(&mut group);
+    #[cfg(feature = "tcod")]
     tcod_fov_random_walls(&mut group);
     bracket_fov_random_walls(&mut group);
 }

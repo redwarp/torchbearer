@@ -12,12 +12,18 @@ keywords = ["gamedev", "pathfinding", "field-of-view"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
+# Optional, only used by benchmarks for comparison. Enable with `--features tcod`.
+# Kept optional because libtcod's bundled C sources fail to build on some toolchains/SDKs.
+tcod = { version = "0.15", optional = true }
 
 [dev-dependencies]
 bracket-pathfinding = "0.8"
 criterion = { version = "0.4", features = ["html_reports"] }
 rand = "0.8"
-tcod = "0.15"
+
+[features]
+# Include the `tcod` comparison in benchmarks.
+tcod = ["dep:tcod"]
 
 [[bench]]
 name = "fov"
