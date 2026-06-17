@@ -36,8 +36,8 @@ pub trait PathMap {
 /// # Examples
 /// ```
 /// use torchbearer::{
-///     path::{astar_path_fourwaygrid, PathMap},
 ///     Point,
+///     path::{PathMap, astar_path_fourwaygrid},
 /// };
 ///
 /// struct SampleMap {
@@ -119,8 +119,8 @@ pub fn astar_path_fourwaygrid<T: PathMap>(map: &T, from: Point, to: Point) -> Op
 /// # Examples
 /// ```
 /// use torchbearer::{
-///     path::{astar_path, FourWayGridGraph, PathMap},
 ///     Point,
+///     path::{FourWayGridGraph, PathMap, astar_path},
 /// };
 ///
 /// struct SampleMap {
@@ -414,9 +414,9 @@ impl<'a, T: PathMap> Graph for FourWayGridGraph<'a, T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{bresenham::BresenhamLine, path::astar_path, Point};
+    use crate::{Point, bresenham::BresenhamLine, path::astar_path};
 
-    use super::{astar_path_fourwaygrid, FourWayGridGraph, PathMap};
+    use super::{FourWayGridGraph, PathMap, astar_path_fourwaygrid};
 
     struct SampleMap {
         width: i32,

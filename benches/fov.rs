@@ -1,10 +1,10 @@
 use criterion::{
-    criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, Criterion,
+    BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::WallTime,
 };
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::{Rng, SeedableRng, rngs::StdRng};
 #[cfg(feature = "tcod")]
 use tcod::Map as TcodMap;
-use torchbearer::{fov::VisionMap, Point};
+use torchbearer::{Point, fov::VisionMap};
 
 const WIDTH: i32 = 45;
 const HEIGHT: i32 = 45;

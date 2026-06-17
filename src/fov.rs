@@ -1,8 +1,8 @@
 //! Collection of utility function to calculate field of vision.
 
 use crate::{
-    bresenham::{BresenhamLine, ThickBresenhamCircle},
     Point,
+    bresenham::{BresenhamLine, ThickBresenhamCircle},
 };
 
 /// Implement the VisionMap trait to use the field of view function.
@@ -39,8 +39,8 @@ pub trait VisionMap {
 /// # Examples
 /// ```
 /// use torchbearer::{
-///     fov::{field_of_view, VisionMap},
 ///     Point,
+///     fov::{VisionMap, field_of_view},
 /// };
 ///
 /// struct SampleMap {
@@ -178,12 +178,12 @@ fn cast_ray<T: VisionMap>(
 
 #[cfg(test)]
 mod tests {
-    use rand::{prelude::StdRng, Rng, SeedableRng};
+    use rand::{Rng, SeedableRng, prelude::StdRng};
     use std::fmt::Debug;
 
     use crate::Point;
 
-    use super::{field_of_view, VisionMap};
+    use super::{VisionMap, field_of_view};
     const WIDTH: i32 = 45;
     const HEIGHT: i32 = 45;
     const POSITION_X: i32 = 22;

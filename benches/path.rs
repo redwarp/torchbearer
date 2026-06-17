@@ -1,13 +1,13 @@
 use bracket_pathfinding::prelude::{Algorithm2D, SmallVec};
 use criterion::{
-    criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, Criterion,
+    BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::WallTime,
 };
 #[cfg(feature = "tcod")]
 use tcod::Map as TcodMap;
 use torchbearer::{
-    bresenham::BresenhamLine,
-    path::{astar_path, astar_path_fourwaygrid, FourWayGridGraph, PathMap},
     Point,
+    bresenham::BresenhamLine,
+    path::{FourWayGridGraph, PathMap, astar_path, astar_path_fourwaygrid},
 };
 
 const WIDTH: i32 = 100;

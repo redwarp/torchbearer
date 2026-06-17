@@ -4,9 +4,9 @@ use tiny_skia::{
     Color, FilterQuality, LineCap, Paint, PathBuilder, Pixmap, PixmapPaint, Rect, Stroke, Transform,
 };
 use torchbearer::{
-    fov::{field_of_view, VisionMap},
-    path::{astar_path_fourwaygrid, PathMap},
     Point,
+    fov::{VisionMap, field_of_view},
+    path::{PathMap, astar_path_fourwaygrid},
 };
 use winit::{
     dpi::{LogicalPosition, PhysicalSize},
