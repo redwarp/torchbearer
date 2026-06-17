@@ -76,7 +76,7 @@ Even though torchbearer provides by default a pathfinding simple function for fo
 You can also simply decide you want to tweak your heuristics, so that moving along roads is easier than climbing a mountain for instance.
 
 ```rust
-use torchbearer::path::{astar_path, Graph, NodeId};
+use torchbearer::path::{astar_path, Cost, Graph, NodeId};
 
 struct MyMap {}
 
@@ -86,15 +86,11 @@ impl Graph for MyMap {
 #        3
 #    }
 #
-#    fn cost_between(&self, a: NodeId, b: NodeId) -> f32 {
+#   fn heuristic(&self, a: NodeId, b: NodeId) -> Cost {
 #        1.0
 #    }
 #
-#   fn heuristic(&self, a: NodeId, b: NodeId) -> f32 {
-#        1.0
-#    }
-#
-#    fn neighboors(&self, a: NodeId, into: &mut Vec<NodeId>) {}
+#    fn neighbors(&self, a: NodeId, into: &mut Vec<(NodeId, Cost)>) {}
 }
 
 let my_map = MyMap {};

@@ -4,7 +4,14 @@ use std::{cmp::Ordering, collections::BinaryHeap};
 
 use crate::Point;
 
+/// Identifies a node in a [`Graph`] (for a grid, typically the tile's row-major
+/// index `x + y * width`). Used to index the algorithm's internal buffers, so a
+/// graph's ids should be a contiguous range `0..node_count`.
 pub type NodeId = usize;
+
+/// The cost of moving between nodes (e.g. a step's price, or a heuristic estimate).
+/// Higher means more expensive terrain.
+pub type Cost = f32;
 
 /// Implement the Map trait to use the pathfinding functions.
 pub trait PathMap {
@@ -196,9 +203,9 @@ pub fn astar_path<T: Graph>(
     let mut came_from: Vec<NodeId> = vec![usize::MAX; graph.node_count()];
     // `f32::INFINITY` is the "not visited yet" sentinel: any real cost compares
     // less than it, so `new_cost < costs[next]` handles the unvisited case too.
-    let mut costs: Vec<f32> = vec![f32::INFINITY; graph.node_count()];
+    let mut costs: Vec<Cost> = vec![f32::INFINITY; graph.node_count()];
     costs[from_index] = 0.;
-    let mut neighboors: Vec<NodeId> = Vec::with_capacity(4);
+    let mut neighbors: Vec<(NodeId, Cost)> = Vec::with_capacity(4);
 
     let mut to_cost = 0.;
 
@@ -222,10 +229,10 @@ pub fn astar_path<T: Graph>(
             continue;
         }
 
-        neighboors.clear();
-        graph.neighboors(current_index, &mut neighboors);
-        for &next_index in neighboors.iter() {
-            let new_cost = cost_from_start + graph.cost_between(current_index, next_index);
+        neighbors.clear();
+        graph.neighbors(current_index, &mut neighbors);
+        for &(next_index, step_cost) in neighbors.iter() {
+            let new_cost = cost_from_start + step_cost;
 
             if new_cost < costs[next_index] {
                 let priority = new_cost + graph.heuristic(next_index, to_index);
@@ -247,7 +254,7 @@ fn reconstruct_path(
     from: NodeId,
     to: NodeId,
     came_from: Vec<NodeId>,
-    cost: f32,
+    cost: Cost,
 ) -> Option<Vec<NodeId>> {
     let mut current = to;
     let target_index = from;
@@ -312,25 +319,23 @@ pub trait Graph {
     /// The amount of nodes in the graph, used to create correctly sized vectors.
     fn node_count(&self) -> usize;
 
-    /// The cost between two points. A higher cost could represent a hard to cross terrain.
-    /// If normal terrain would cost 1 to go from a to be, climbing a mountain side could cost 2.
-    fn cost_between(&self, a: NodeId, b: NodeId) -> f32;
-
     /// How close we are from our target.
     /// See <https://www.redblobgames.com/pathfinding/a-star/introduction.html#greedy-best-first>
     /// for more details about how it is useful.
-    fn heuristic(&self, a: NodeId, b: NodeId) -> f32;
+    fn heuristic(&self, a: NodeId, b: NodeId) -> Cost;
 
-    /// From point a, where can you go. Create a list of all possible neighboors.
-    /// No need to filter the walkable ones, or the one in bounds: the algorithm
-    /// does it later for optimisation purposes.
+    /// From node `a`, where can you go, and at what cost to step there. Push each
+    /// reachable neighbour together with the cost of moving onto it; a higher cost
+    /// could represent harder terrain (normal terrain might cost 1, climbing a
+    /// mountain side 2). Only push neighbours that are actually walkable and in
+    /// bounds — the algorithm trusts every entry and does not re-check.
     ///
     /// # Arguments
     ///
-    /// * `a` - the position whose neighboors you are looking for.
-    /// * `into` - push the neighboors into this vector.
+    /// * `a` - the node whose neighbours you are looking for.
+    /// * `into` - push the `(neighbour, cost)` pairs into this vector.
     ///   No need to clear explicitely, as `clear()` is called before each call to this method.
-    fn neighboors(&self, a: NodeId, into: &mut Vec<NodeId>);
+    fn neighbors(&self, a: NodeId, into: &mut Vec<(NodeId, Cost)>);
 }
 
 /// A wrapper around a Map, representing the graph for a four way grid type of Map, where
@@ -366,49 +371,45 @@ impl<'a, T: PathMap> Graph for FourWayGridGraph<'a, T> {
         (self.width * self.height) as usize
     }
 
-    fn cost_between(&self, a: NodeId, b: NodeId) -> f32 {
-        let basic = 1.;
-        let (x1, y1) = self.index_to_point(a);
-        // Why the nudge? Check https://www.redblobgames.com/pathfinding/a-star/implementation.html#troubleshooting-ugly-path
-        // For a path in a 4 way grid, going up 3 times then left 3 times is the same cost as
-        // going up then left then up then... So we add a small nudge to the cost to make sure
-        // the algorithm doesn't follow straight path when it could go diagonal.
-        // A horizontal step changes the index by 1, so `abs_diff == 1` gives the
-        // direction without converting `b` to a point.
-        let moves_horizontally = a.abs_diff(b) == 1;
-        let nudge = if ((x1 + y1) % 2 == 0) == moves_horizontally {
-            1.
-        } else {
-            0.
-        };
-        basic + 0.001 * nudge
-    }
-
-    fn heuristic(&self, a: NodeId, b: NodeId) -> f32 {
+    fn heuristic(&self, a: NodeId, b: NodeId) -> Cost {
         let (xa, ya) = self.index_to_point(a);
         let (xb, yb) = self.index_to_point(b);
 
         ((xa - xb).abs() + (ya - yb).abs()) as f32
     }
 
-    fn neighboors(&self, a: NodeId, into: &mut Vec<NodeId>) {
+    fn neighbors(&self, a: NodeId, into: &mut Vec<(NodeId, Cost)>) {
         let (x, y) = self.index_to_point(a);
+        // Parity of the source tile, computed once for all four edges.
+        let source_even = (x + y) % 2 == 0;
 
-        fn add_to_neighboors_if_qualified<'a, T: PathMap>(
+        // Why the nudge? Check https://www.redblobgames.com/pathfinding/a-star/implementation.html#troubleshooting-ugly-path
+        // For a path in a 4 way grid, going up 3 times then left 3 times is the same cost as
+        // going up then left then up then... So we add a small nudge to the cost to make sure
+        // the algorithm doesn't follow straight path when it could go diagonal.
+        // The nudge applies when the source-tile parity matches the move direction.
+        fn add_if_qualified<'a, T: PathMap>(
             graph: &FourWayGridGraph<'a, T>,
             (x, y): Point,
-            into: &mut Vec<NodeId>,
+            source_even: bool,
+            moves_horizontally: bool,
+            into: &mut Vec<(NodeId, Cost)>,
         ) {
             if x < 0 || y < 0 || x >= graph.width || y >= graph.height || !graph.is_walkable(x, y) {
                 return;
             }
-            into.push(graph.point_to_index((x, y)));
+            let nudge = if source_even == moves_horizontally {
+                1.
+            } else {
+                0.
+            };
+            into.push((graph.point_to_index((x, y)), 1. + 0.001 * nudge));
         }
 
-        add_to_neighboors_if_qualified(self, (x, y + 1), into);
-        add_to_neighboors_if_qualified(self, (x, y - 1), into);
-        add_to_neighboors_if_qualified(self, (x - 1, y), into);
-        add_to_neighboors_if_qualified(self, (x + 1, y), into);
+        add_if_qualified(self, (x, y + 1), source_even, false, into);
+        add_if_qualified(self, (x, y - 1), source_even, false, into);
+        add_if_qualified(self, (x - 1, y), source_even, true, into);
+        add_if_qualified(self, (x + 1, y), source_even, true, into);
     }
 }
 
